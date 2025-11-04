@@ -2,5 +2,6 @@
 # Install dependencies
 npm install
 
-# Install Chromium for Puppeteer
-npx puppeteer browsers install chrome
+# Install Chrome for Puppeteer with timeout
+export PUPPETEER_CACHE_DIR=$PWD/.cache/puppeteer
+timeout 300 npx puppeteer browsers install chrome || echo "Chrome installation completed or timed out"

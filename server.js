@@ -17,23 +17,60 @@ const CHAT_ID = process.env.TELEGRAM_CHAT_ID;
 // Initialize bot only if credentials are provided
 let bot = null;
 if (BOT_TOKEN && CHAT_ID) {
+    // Clear any existing webhook first to avoid conflicts
+    const TelegramBotPolling = require('node-telegram-bot-api/lib/telegramPolling');
+
     bot = new TelegramBot(BOT_TOKEN, {
-        polling: {
-            interval: 300,
-            autoStart: true,
-            params: {
-                timeout: 10
-            }
-        }
+        polling: false // Start with polling disabled
     });
+
+    // Delete webhook and clear any pending updates
+    bot.deleteWebHook()
+        .then(() => {
+            console.log('Webhook deleted, starting polling...');
+            return bot.startPolling({
+                restart: true,
+                polling: {
+                    interval: 300,
+                    params: {
+                        timeout: 10
+                    }
+                }
+            });
+        })
+        .catch((error) => {
+            console.error('Error starting bot:', error.message);
+        });
 
     // Handle polling errors gracefully
     bot.on('polling_error', (error) => {
         console.error('Telegram polling error:', error.message);
         if (error.message.includes('409 Conflict')) {
-            console.log('Another bot instance is running. Stopping this instance polling...');
+            console.log('Conflict detected. Clearing and restarting...');
+            bot.stopPolling();
+            setTimeout(() => {
+                bot.deleteWebHook().then(() => {
+                    bot.startPolling({ restart: true });
+                });
+            }, 1000);
+        }
+    });
+
+    // Handle graceful shutdown
+    process.on('SIGTERM', () => {
+        console.log('SIGTERM received, stopping bot...');
+        if (bot) {
             bot.stopPolling();
         }
+        process.exit(0);
+    });
+
+    process.on('SIGINT', () => {
+        console.log('SIGINT received, stopping bot...');
+        if (bot) {
+            bot.stopPolling();
+        }
+        process.exit(0);
     });
 
     console.log('Telegram bot configured with token:', BOT_TOKEN.substring(0, 10) + '...');
