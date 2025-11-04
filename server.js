@@ -27,13 +27,10 @@ async function initBot() {
         // Create bot with webhook (no polling conflicts!)
         bot = new TelegramBot(BOT_TOKEN);
 
-        // Set webhook URL - must use Render URL, not custom domain
-        const webhookUrl = process.env.NODE_ENV === 'production'
-            ? 'https://she-v-1-0.onrender.com/webhook'
-            : `http://localhost:${PORT}/webhook`;
-
-        await bot.setWebHook(webhookUrl);
-        console.log('Webhook set to:', webhookUrl);
+        // Set webhook URL
+        const WEBHOOK_URL = 'https://www.escortwork.org/webhook';
+        await bot.setWebHook(WEBHOOK_URL);
+        console.log('Webhook set to:', WEBHOOK_URL);
 
         botReady = true;
         console.log('Telegram bot started successfully via webhook');
@@ -42,8 +39,10 @@ async function initBot() {
         bot.onText(/\/all/, async (msg) => {
             try {
                 const screenshotPath = await takeScreenshot();
-                await bot.sendPhoto(msg.chat.id, screenshotPath, {
-                    caption: '📋 Актуальное расписание на сегодня'
+                const rs = fsSync.createReadStream(screenshotPath);
+                await bot.sendPhoto(msg.chat.id, rs, {
+                    caption: '📋 Актуальное расписание на сегодня',
+                    contentType: 'image/jpeg'
                 });
             } catch (error) {
                 console.error('Screenshot error for /all command:', error.message);
@@ -182,42 +181,46 @@ app.post('/api/activity', async (req, res) => {
     }
 });
 
-// Screenshot functionality using external API
+// Screenshot functionality
 const fsSync = require('fs');
-async function takeScreenshot() {
-    try {
-        const https = require('https');
+const puppeteer = require('puppeteer');
 
-        // URL to screenshot
+async function takeScreenshot() {
+    let browser;
+    try {
+        browser = await puppeteer.launch({
+            headless: 'new',
+            args: ['--no-sandbox', '--disable-setuid-sandbox']
+        });
+
+        const page = await browser.newPage();
+        await page.setViewport({ width: 1100, height: 1600 });
+
         const url = process.env.NODE_ENV === 'production'
             ? 'https://escortwork.org'
             : `http://localhost:${PORT}`;
 
-        // Use ApiFlash for better reliability
-        const screenshotUrl = `https://api.apiflash.com/v1/urltoimage?access_key=demo&url=${encodeURIComponent(url)}&format=png&width=1200&height=1800&full_page=true`;
+        await page.goto(url, { waitUntil: 'networkidle0', timeout: 60000 });
+        await page.waitForTimeout(1200);
 
-        return new Promise((resolve, reject) => {
-            const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
-            const filename = `schedule-${timestamp}.png`;
-            const filepath = path.join(SCREENSHOT_DIR, filename);
-            const file = fsSync.createWriteStream(filepath);
+        const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
+        const filename = `schedule-${timestamp}.jpg`;
+        const filepath = path.join(SCREENSHOT_DIR, filename);
 
-            https.get(screenshotUrl, (response) => {
-                response.pipe(file);
-                file.on('finish', () => {
-                    file.close();
-                    console.log('Screenshot saved:', filepath);
-                    resolve(filepath);
-                });
-            }).on('error', (err) => {
-                fsSync.unlinkSync(filepath);
-                console.error('Screenshot download error:', err);
-                reject(err);
-            });
-        });
+        const el = await page.$('#appContainer');
+        if (!el) throw new Error('appContainer not found');
+
+        await el.screenshot({ path: filepath, type: 'jpeg', quality: 80 });
+
+        const { size } = await fs.stat(filepath);
+        console.log('Screenshot size:', size);
+
+        return filepath;
     } catch (error) {
         console.error('Screenshot error:', error);
         throw error;
+    } finally {
+        if (browser) await browser.close();
     }
 }
 
@@ -228,7 +231,8 @@ async function sendScreenshotToTelegram(filepath, caption = '') {
         return false;
     }
     try {
-        await bot.sendPhoto(CHAT_ID, filepath, { caption });
+        const rs = fsSync.createReadStream(filepath);
+        await bot.sendPhoto(CHAT_ID, rs, { caption, contentType: 'image/jpeg' });
         console.log('Screenshot sent to Telegram');
         return true;
     } catch (error) {
