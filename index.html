@@ -440,8 +440,8 @@
     <div class="login-screen" id="loginScreen">
         <div class="login-box">
             <h1 class="login-title">上海排班系统</h1>
-            <input type="text" class="login-input" id="username" placeholder="用户名" value="kris">
-            <input type="password" class="login-input" id="password" placeholder="密码" value="12344321">
+            <input type="text" class="login-input" id="username" placeholder="用户名">
+            <input type="password" class="login-input" id="password" placeholder="密码">
             <button class="login-button" onclick="login()">登录</button>
             <div class="error-msg" id="errorMsg"></div>
         </div>
@@ -508,6 +508,11 @@
             '00:00', '01:00', '02:00'
         ];
 
+        // API base URL
+        const API_BASE = window.location.hostname === 'localhost'
+            ? 'http://localhost:3000'
+            : window.location.origin;
+
         // State
         let currentUser = null;
         let currentDate = 0;
@@ -516,14 +521,18 @@
 
         // Initialize
         document.addEventListener('DOMContentLoaded', () => {
+            checkSavedLogin();
             initializeData();
             startClock();
-            loadDemoData();
-            
+            loadFromServer();
+
             // Enter key support
             document.getElementById('password').addEventListener('keypress', (e) => {
                 if (e.key === 'Enter') login();
             });
+
+            // Start auto-refresh
+            startAutoRefresh();
         });
 
         function initializeData() {
@@ -671,12 +680,24 @@
             }
         }
 
+        function checkSavedLogin() {
+            const savedUser = localStorage.getItem('currentUser');
+            if (savedUser && USERS[savedUser]) {
+                currentUser = savedUser;
+                document.getElementById('loginScreen').style.display = 'none';
+                document.getElementById('appContainer').style.display = 'block';
+                updateDateDisplay();
+                renderSchedule();
+            }
+        }
+
         function login() {
             const username = document.getElementById('username').value.toLowerCase();
             const password = document.getElementById('password').value;
-            
+
             if (USERS[username] && USERS[username] === password) {
                 currentUser = username;
+                localStorage.setItem('currentUser', username);
                 document.getElementById('loginScreen').style.display = 'none';
                 document.getElementById('appContainer').style.display = 'block';
                 updateDateDisplay();
@@ -688,6 +709,74 @@
                     document.getElementById('errorMsg').textContent = '';
                 }, 3000);
             }
+        }
+
+        // Load data from server
+        async function loadFromServer() {
+            try {
+                const response = await fetch(`${API_BASE}/api/schedule`);
+                if (response.ok) {
+                    const data = await response.json();
+                    if (data.scheduleData && Object.keys(data.scheduleData).length > 0) {
+                        scheduleData = data.scheduleData;
+                        activityLog = data.activityLog || [];
+                        renderSchedule();
+                        updateLogDisplay();
+                    } else {
+                        // Load demo data if server has no data
+                        loadDemoData();
+                        saveToServer();
+                    }
+                }
+            } catch (error) {
+                console.error('Failed to load from server:', error);
+                // Try loading from localStorage as fallback
+                const saved = localStorage.getItem('scheduleData');
+                if (saved) {
+                    scheduleData = JSON.parse(saved);
+                    renderSchedule();
+                } else {
+                    loadDemoData();
+                }
+            }
+        }
+
+        // Save data to server
+        async function saveToServer() {
+            try {
+                await fetch(`${API_BASE}/api/schedule`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        scheduleData,
+                        activityLog
+                    })
+                });
+            } catch (error) {
+                console.error('Failed to save to server:', error);
+            }
+        }
+
+        // Auto-refresh from server
+        function startAutoRefresh() {
+            setInterval(async () => {
+                try {
+                    const response = await fetch(`${API_BASE}/api/schedule`);
+                    if (response.ok) {
+                        const data = await response.json();
+                        if (JSON.stringify(data.scheduleData) !== JSON.stringify(scheduleData)) {
+                            scheduleData = data.scheduleData;
+                            activityLog = data.activityLog || [];
+                            renderSchedule();
+                            updateLogDisplay();
+                        }
+                    }
+                } catch (error) {
+                    console.error('Auto-refresh failed:', error);
+                }
+            }, 2000);
         }
 
         function updateDateDisplay() {
@@ -770,33 +859,35 @@
         function updateAddress(table, value) {
             const dates = getNextThreeDates();
             const dateKey = dates[currentDate].key;
-            
+
             if (!scheduleData[dateKey].slots) {
                 scheduleData[dateKey].slots = {};
             }
             if (!scheduleData[dateKey].slots[table]) {
                 scheduleData[dateKey].slots[table] = {};
             }
-            
+
             scheduleData[dateKey].slots[table].address = value;
             saveToLocalStorage();
+            saveToServer();
             logActivity(`${currentUser} обновил адрес стола ${table}`);
         }
 
         function updateSlot(table, time, value) {
             const dates = getNextThreeDates();
             const dateKey = dates[currentDate].key;
-            
+
             if (!scheduleData[dateKey].slots) {
                 scheduleData[dateKey].slots = {};
             }
             if (!scheduleData[dateKey].slots[table]) {
                 scheduleData[dateKey].slots[table] = {};
             }
-            
+
             scheduleData[dateKey].slots[table][time] = value;
             saveToLocalStorage();
-            
+            saveToServer();
+
             const action = value ? 'записал' : 'очистил';
             logActivity(`${currentUser} ${action} ${time} для стола ${table}`);
         }
@@ -830,25 +921,27 @@
         function addTable(tableNum) {
             const dates = getNextThreeDates();
             const dateKey = dates[currentDate].key;
-            
+
             if (!scheduleData[dateKey].tables) {
                 scheduleData[dateKey].tables = [];
             }
-            
+
             if (!scheduleData[dateKey].tables.includes(tableNum)) {
                 scheduleData[dateKey].tables.push(tableNum);
                 scheduleData[dateKey].tables.sort((a, b) => parseInt(a) - parseInt(b));
-                
+
                 saveToLocalStorage();
+                saveToServer();
                 renderSchedule();
                 logActivity(`${currentUser} добавил стол ${tableNum}`);
             }
-            
+
             hideAddDialog();
         }
 
         function saveData() {
             saveToLocalStorage();
+            saveToServer();
             alert('✅ Данные сохранены');
             logActivity(`${currentUser} сохранил данные`);
         }
