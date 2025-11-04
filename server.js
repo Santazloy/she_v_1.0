@@ -16,61 +16,85 @@ const CHAT_ID = process.env.TELEGRAM_CHAT_ID;
 
 // Initialize bot only if credentials are provided
 let bot = null;
-if (BOT_TOKEN && CHAT_ID) {
-    bot = new TelegramBot(BOT_TOKEN, {
-        polling: {
-            interval: 300,
-            autoStart: false,
-            params: {
-                timeout: 10
-            }
-        }
-    });
+let botReady = false;
 
-    // Clear webhook before starting polling
-    bot.deleteWebHook()
-        .then(() => {
-            console.log('Webhook cleared, starting polling...');
-            bot.startPolling();
-        })
-        .catch((error) => {
-            console.error('Error clearing webhook:', error.message);
-            // Try to start polling anyway
-            bot.startPolling();
+async function initBot() {
+    if (!BOT_TOKEN || !CHAT_ID) {
+        console.log('Telegram credentials not provided, bot disabled');
+        return;
+    }
+
+    try {
+        // Create bot without polling
+        bot = new TelegramBot(BOT_TOKEN, { polling: false });
+
+        // Force delete webhook and clear any conflicts
+        await bot.deleteWebHook({ drop_pending_updates: true });
+        console.log('Webhook deleted, all pending updates dropped');
+
+        // Wait a bit for Telegram to process
+        await new Promise(resolve => setTimeout(resolve, 2000));
+
+        // Now start polling
+        await bot.startPolling({
+            polling: {
+                interval: 300,
+                params: { timeout: 10 }
+            }
         });
 
-    // Handle polling errors gracefully
-    bot.on('polling_error', (error) => {
-        console.error('Telegram polling error:', error.message);
-        if (error.message.includes('409 Conflict')) {
-            console.log('Conflict detected. Waiting 5 seconds and restarting...');
-            bot.stopPolling();
-            setTimeout(() => {
-                bot.deleteWebHook()
-                    .then(() => bot.startPolling())
-                    .catch(() => bot.startPolling());
-            }, 5000);
-        }
-    });
+        botReady = true;
+        console.log('Telegram bot started successfully');
 
-    // Handle graceful shutdown
-    process.on('SIGTERM', () => {
-        console.log('SIGTERM received, stopping bot...');
-        if (bot) {
-            bot.stopPolling();
-        }
-        process.exit(0);
-    });
+        // Register commands
+        bot.onText(/\/all/, async (msg) => {
+            try {
+                const screenshotPath = await takeScreenshot();
+                await bot.sendPhoto(msg.chat.id, screenshotPath, {
+                    caption: '📋 Актуальное расписание на сегодня'
+                });
+            } catch (error) {
+                console.error('Screenshot error for /all command:', error.message);
+                bot.sendMessage(msg.chat.id,
+                    '⚠️ Скриншоты недоступны на Free tier Render (нужно 2GB RAM).\n\n' +
+                    '💡 Используйте веб-интерфейс: https://she-v-1-0.onrender.com'
+                );
+            }
+        });
 
-    process.on('SIGINT', () => {
-        console.log('SIGINT received, stopping bot...');
-        if (bot) {
-            bot.stopPolling();
-        }
-        process.exit(0);
-    });
+        bot.onText(/\/start/, (msg) => {
+            bot.sendMessage(msg.chat.id,
+                '👋 Привет! Я бот управления расписанием.\n\n' +
+                'Команды:\n' +
+                '/all - Получить текущее расписание\n' +
+                '\n' +
+                '📱 Веб-интерфейс: https://she-v-1-0.onrender.com'
+            );
+        });
 
-    console.log('Telegram bot configured with token:', BOT_TOKEN.substring(0, 10) + '...');
+        // Handle polling errors
+        bot.on('polling_error', (error) => {
+            console.error('Polling error:', error.message);
+        });
+
+        // Graceful shutdown
+        process.on('SIGTERM', async () => {
+            console.log('SIGTERM - stopping bot...');
+            if (bot) await bot.stopPolling();
+            process.exit(0);
+        });
+
+        process.on('SIGINT', async () => {
+            console.log('SIGINT - stopping bot...');
+            if (bot) await bot.stopPolling();
+            process.exit(0);
+        });
+
+    } catch (error) {
+        console.error('Failed to initialize bot:', error.message);
+        bot = null;
+        botReady = false;
+    }
 }
 
 // Middleware
@@ -359,33 +383,6 @@ function getNextThreeDates() {
     return dates;
 }
 
-// Telegram bot commands
-if (bot) {
-    bot.onText(/\/all/, async (msg) => {
-        try {
-            const screenshotPath = await takeScreenshot();
-            await bot.sendPhoto(msg.chat.id, screenshotPath, {
-                caption: '📋 Актуальное расписание на сегодня'
-            });
-        } catch (error) {
-            console.error('Screenshot error for /all command:', error.message);
-            bot.sendMessage(msg.chat.id,
-                '⚠️ Скриншот недоступен. Проверьте Chrome/ENV.\n\n' +
-                'Ошибка: ' + error.message + '\n\n' +
-                '💡 Используйте веб-интерфейс: https://she-v-1-0.onrender.com'
-            );
-        }
-    });
-
-    bot.onText(/\/start/, (msg) => {
-        bot.sendMessage(msg.chat.id,
-            '👋 Привет! Я бот управления расписанием.\n\n' +
-            'Команды:\n' +
-            '/all - Получить текущее расписание\n'
-        );
-    });
-}
-
 // Schedule daily reset at 4 AM Shanghai time
 // Cron format: minute hour day month weekday
 cron.schedule('0 4 * * *', archiveAndResetSchedule, {
@@ -417,10 +414,10 @@ app.get('/api/health', (req, res) => {
 // Start server
 async function startServer() {
     await initDirectories();
+    await initBot();
 
     app.listen(PORT, () => {
         console.log(`Server running on port ${PORT}`);
-        console.log(`Telegram bot initialized`);
         console.log(`Daily reset scheduled for 4:00 AM Shanghai time`);
     });
 }
