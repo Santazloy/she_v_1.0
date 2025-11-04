@@ -336,13 +336,18 @@ async function startServer() {
     await initDirectories();
 
     // Start Express first
-    app.listen(PORT, async () => {
+    app.listen(PORT, '0.0.0.0', async () => {
         console.log(`Server running on port ${PORT}`);
         console.log(`Daily reset scheduled for 4:00 AM Shanghai time`);
 
-        // Then initialize bot with webhook
-        await initBot();
+        // Then initialize bot with webhook (non-blocking)
+        initBot().catch(err => {
+            console.error('Bot initialization failed, but server continues:', err.message);
+        });
     });
 }
 
-startServer();
+startServer().catch(err => {
+    console.error('Failed to start server:', err);
+    process.exit(1);
+});
