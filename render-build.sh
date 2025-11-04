@@ -2,6 +2,7 @@
 set -e
 
 echo "==> Installing dependencies..."
+export PUPPETEER_SKIP_DOWNLOAD=true
 npm install
 
 echo "==> Installing Chrome for Puppeteer..."
