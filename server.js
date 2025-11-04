@@ -203,6 +203,7 @@ async function takeScreenshot() {
     let browser;
     try {
         const execPath = await resolveChromeExecutable();
+        console.log('Chrome path:', execPath, 'exists?', fsSync.existsSync(execPath));
 
         browser = await puppeteer.launch({
             headless: 'new',
