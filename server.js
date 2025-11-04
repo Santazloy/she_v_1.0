@@ -135,6 +135,14 @@ app.post('/api/activity', async (req, res) => {
 async function takeScreenshot() {
     let browser;
     try {
+        // Try to get executable path
+        let execPath;
+        try {
+            execPath = process.env.PUPPETEER_EXECUTABLE_PATH || puppeteer.executablePath();
+        } catch (error) {
+            throw new Error('Chrome not installed. Screenshots are not available on this environment. Consider upgrading to Starter plan or using an external screenshot service.');
+        }
+
         browser = await puppeteer.launch({
             headless: 'new',
             args: [
@@ -145,7 +153,7 @@ async function takeScreenshot() {
                 '--disable-gpu',
                 '--window-size=1920x1080'
             ],
-            executablePath: process.env.PUPPETEER_EXECUTABLE_PATH || puppeteer.executablePath()
+            executablePath: execPath
         });
 
         const page = await browser.newPage();
@@ -264,7 +272,14 @@ if (bot) {
                 caption: '📋 Актуальное расписание на сегодня'
             });
         } catch (error) {
-            bot.sendMessage(msg.chat.id, '❌ Ошибка при создании скриншота');
+            console.error('Screenshot error for /all command:', error.message);
+            bot.sendMessage(msg.chat.id,
+                '❌ Скриншоты недоступны на Free tier Render.\n\n' +
+                '💡 Решение:\n' +
+                '1. Обновитесь до Starter plan ($7/мес)\n' +
+                '2. Или используйте веб-интерфейс: https://she-v-1-0.onrender.com\n\n' +
+                'Все функции расписания работают онлайн!'
+            );
         }
     });
 
