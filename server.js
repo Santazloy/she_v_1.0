@@ -160,26 +160,27 @@ async function takeScreenshot() {
         // Set cache directory for Puppeteer
         process.env.PUPPETEER_CACHE_DIR = process.env.PUPPETEER_CACHE_DIR || '/opt/render/.cache/puppeteer';
 
-        try {
-            // First try environment variable
-            if (process.env.PUPPETEER_EXECUTABLE_PATH) {
-                execPath = process.env.PUPPETEER_EXECUTABLE_PATH;
+        // First try environment variable
+        if (process.env.PUPPETEER_EXECUTABLE_PATH) {
+            execPath = process.env.PUPPETEER_EXECUTABLE_PATH;
+            console.log('Using PUPPETEER_EXECUTABLE_PATH:', execPath);
+        } else {
+            // Try hardcoded path on Render FIRST
+            const renderChromePath = '/opt/render/.cache/puppeteer/chrome/linux-121.0.6167.85/chrome-linux64/chrome';
+            const fsSync = require('fs');
+            if (fsSync.existsSync(renderChromePath)) {
+                execPath = renderChromePath;
+                console.log('Using hardcoded Render Chrome path:', renderChromePath);
             } else {
-                // Try hardcoded path on Render
-                const renderChromePath = '/opt/render/.cache/puppeteer/chrome/linux-121.0.6167.85/chrome-linux64/chrome';
-                const fs = require('fs');
-                if (fs.existsSync(renderChromePath)) {
-                    execPath = renderChromePath;
-                    console.log('Using hardcoded Render Chrome path');
-                } else {
-                    // Fallback to puppeteer auto-detection
+                // Last resort: try puppeteer auto-detection
+                try {
                     execPath = await puppeteer.executablePath();
+                    console.log('Using Puppeteer auto-detected path:', execPath);
+                } catch (error) {
+                    console.error('Failed to find Chrome anywhere:', error.message);
+                    throw new Error('Chrome not found. Screenshots unavailable.');
                 }
             }
-            console.log('Using Chrome executable:', execPath);
-        } catch (error) {
-            console.error('Failed to find Chrome:', error);
-            throw new Error('Chrome not found. Screenshots unavailable.');
         }
 
         browser = await puppeteer.launch({
