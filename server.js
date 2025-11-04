@@ -168,10 +168,33 @@ async function takeScreenshot() {
             // Try hardcoded path on Render FIRST
             const renderChromePath = '/opt/render/.cache/puppeteer/chrome/linux-121.0.6167.85/chrome-linux64/chrome';
             const fsSync = require('fs');
-            if (fsSync.existsSync(renderChromePath)) {
+
+            console.log('Checking hardcoded path:', renderChromePath);
+            console.log('File exists?', fsSync.existsSync(renderChromePath));
+
+            // Try to list directory to see what's there
+            try {
+                const chromeCacheDir = '/opt/render/.cache/puppeteer/chrome';
+                if (fsSync.existsSync(chromeCacheDir)) {
+                    const versions = fsSync.readdirSync(chromeCacheDir);
+                    console.log('Available Chrome versions:', versions);
+
+                    // Use the first available version
+                    if (versions.length > 0) {
+                        execPath = `/opt/render/.cache/puppeteer/chrome/${versions[0]}/chrome-linux64/chrome`;
+                        console.log('Using first available Chrome version:', execPath);
+                    }
+                }
+            } catch (e) {
+                console.log('Could not list Chrome directory:', e.message);
+            }
+
+            if (!execPath && fsSync.existsSync(renderChromePath)) {
                 execPath = renderChromePath;
                 console.log('Using hardcoded Render Chrome path:', renderChromePath);
-            } else {
+            }
+
+            if (!execPath) {
                 // Last resort: try puppeteer auto-detection
                 try {
                     execPath = await puppeteer.executablePath();
