@@ -156,46 +156,33 @@ async function takeScreenshot() {
     try {
         // Try to get executable path
         let execPath;
-
-        // Set cache directory for Puppeteer
-        process.env.PUPPETEER_CACHE_DIR = process.env.PUPPETEER_CACHE_DIR || '/opt/render/.cache/puppeteer';
+        const fsSync = require('fs');
 
         // First try environment variable
         if (process.env.PUPPETEER_EXECUTABLE_PATH) {
             execPath = process.env.PUPPETEER_EXECUTABLE_PATH;
             console.log('Using PUPPETEER_EXECUTABLE_PATH:', execPath);
         } else {
-            // Try hardcoded path on Render FIRST
-            const renderChromePath = '/opt/render/.cache/puppeteer/chrome/linux-121.0.6167.85/chrome-linux64/chrome';
-            const fsSync = require('fs');
-
-            console.log('Checking hardcoded path:', renderChromePath);
-            console.log('File exists?', fsSync.existsSync(renderChromePath));
-
-            // Try to list directory to see what's there
+            // Try to find Chrome in node_modules/.cache (default Puppeteer location)
             try {
-                const chromeCacheDir = '/opt/render/.cache/puppeteer/chrome';
-                if (fsSync.existsSync(chromeCacheDir)) {
-                    const versions = fsSync.readdirSync(chromeCacheDir);
-                    console.log('Available Chrome versions:', versions);
+                const nodeModulesCache = path.join(__dirname, 'node_modules', '.cache', 'puppeteer', 'chrome');
+                console.log('Checking node_modules cache:', nodeModulesCache);
 
-                    // Use the first available version
+                if (fsSync.existsSync(nodeModulesCache)) {
+                    const versions = fsSync.readdirSync(nodeModulesCache);
+                    console.log('Available Chrome versions in node_modules:', versions);
+
                     if (versions.length > 0) {
-                        execPath = `/opt/render/.cache/puppeteer/chrome/${versions[0]}/chrome-linux64/chrome`;
-                        console.log('Using first available Chrome version:', execPath);
+                        execPath = path.join(nodeModulesCache, versions[0], 'chrome-linux64', 'chrome');
+                        console.log('Found Chrome in node_modules:', execPath);
                     }
                 }
             } catch (e) {
-                console.log('Could not list Chrome directory:', e.message);
+                console.log('Could not check node_modules cache:', e.message);
             }
 
-            if (!execPath && fsSync.existsSync(renderChromePath)) {
-                execPath = renderChromePath;
-                console.log('Using hardcoded Render Chrome path:', renderChromePath);
-            }
-
+            // Fallback: try puppeteer auto-detection
             if (!execPath) {
-                // Last resort: try puppeteer auto-detection
                 try {
                     execPath = await puppeteer.executablePath();
                     console.log('Using Puppeteer auto-detected path:', execPath);
