@@ -156,13 +156,25 @@ async function takeScreenshot() {
     try {
         // Try to get executable path
         let execPath;
+
+        // Set cache directory for Puppeteer
+        process.env.PUPPETEER_CACHE_DIR = process.env.PUPPETEER_CACHE_DIR || '/opt/render/.cache/puppeteer';
+
         try {
             // First try environment variable
             if (process.env.PUPPETEER_EXECUTABLE_PATH) {
                 execPath = process.env.PUPPETEER_EXECUTABLE_PATH;
             } else {
-                // Then try to get from puppeteer
-                execPath = await puppeteer.executablePath();
+                // Try hardcoded path on Render
+                const renderChromePath = '/opt/render/.cache/puppeteer/chrome/linux-121.0.6167.85/chrome-linux64/chrome';
+                const fs = require('fs');
+                if (fs.existsSync(renderChromePath)) {
+                    execPath = renderChromePath;
+                    console.log('Using hardcoded Render Chrome path');
+                } else {
+                    // Fallback to puppeteer auto-detection
+                    execPath = await puppeteer.executablePath();
+                }
             }
             console.log('Using Chrome executable:', execPath);
         } catch (error) {

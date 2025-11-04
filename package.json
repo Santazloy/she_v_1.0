@@ -4,7 +4,7 @@
   "description": "Shanghai Schedule Mini App for Telegram",
   "main": "server.js",
   "scripts": {
-    "start": "node server.js",
+    "start": "PUPPETEER_CACHE_DIR=/opt/render/.cache/puppeteer node server.js",
     "dev": "nodemon server.js",
     "postinstall": "PUPPETEER_CACHE_DIR=/opt/render/.cache/puppeteer npx puppeteer browsers install chrome || echo 'Chrome installation skip'"
   },
