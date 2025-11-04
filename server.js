@@ -4,7 +4,6 @@ const fs = require('fs').promises;
 const path = require('path');
 const cron = require('node-cron');
 const TelegramBot = require('node-telegram-bot-api');
-const puppeteer = require('puppeteer');
 require('dotenv').config();
 
 const app = express();
@@ -183,108 +182,42 @@ app.post('/api/activity', async (req, res) => {
     }
 });
 
-// Helper function to resolve Chrome executable
+// Screenshot functionality using external API
 const fsSync = require('fs');
-
-async function resolveChromeExecutable() {
-    if (process.env.PUPPETEER_EXECUTABLE_PATH && fsSync.existsSync(process.env.PUPPETEER_EXECUTABLE_PATH)) {
-        console.log('Using PUPPETEER_EXECUTABLE_PATH:', process.env.PUPPETEER_EXECUTABLE_PATH);
-        return process.env.PUPPETEER_EXECUTABLE_PATH;
-    }
-
-    try {
-        const ep = await puppeteer.executablePath();
-        if (ep && fsSync.existsSync(ep)) {
-            console.log('Using Puppeteer auto-detected path:', ep);
-            return ep;
-        }
-    } catch (e) {
-        console.log('Puppeteer auto-detection failed:', e.message);
-    }
-
-    const base = path.join(__dirname, '.cache', 'puppeteer');
-    console.log('Checking project cache:', base);
-
-    if (fsSync.existsSync(base)) {
-        const vendors = fsSync.readdirSync(base);
-        console.log('Found vendors:', vendors);
-
-        for (const v of vendors) {
-            const versionsRoot = path.join(base, v);
-            if (!fsSync.existsSync(versionsRoot)) continue;
-
-            const versions = fsSync.readdirSync(versionsRoot);
-            versions.sort().reverse();
-            console.log(`Versions for ${v}:`, versions);
-
-            for (const ver of versions) {
-                const candidate = path.join(versionsRoot, ver, 'chrome-linux64', 'chrome');
-                console.log('Checking candidate:', candidate);
-                if (fsSync.existsSync(candidate)) {
-                    console.log('Found Chrome:', candidate);
-                    return candidate;
-                }
-            }
-        }
-    }
-
-    throw new Error('Chrome not found');
-}
-
-// Screenshot functionality
 async function takeScreenshot() {
-    let browser;
     try {
-        const execPath = await resolveChromeExecutable();
-        console.log('Chrome path:', execPath, 'exists?', fsSync.existsSync(execPath));
+        const https = require('https');
 
-        browser = await puppeteer.launch({
-            headless: 'new',
-            executablePath: execPath,
-            args: [
-                '--no-sandbox',
-                '--disable-setuid-sandbox',
-                '--disable-dev-shm-usage',
-                '--disable-accelerated-2d-canvas',
-                '--disable-gpu',
-                '--window-size=1920x1080'
-            ]
-        });
-
-        const page = await browser.newPage();
-        await page.setViewport({ width: 1200, height: 1800 });
-
-        // Load the app
+        // URL to screenshot
         const url = process.env.NODE_ENV === 'production'
             ? 'https://she-v-1-0.onrender.com'
             : `http://localhost:${PORT}`;
 
-        await page.goto(url, { waitUntil: 'networkidle0' });
+        // Use screenshot.guru API (free, no signup)
+        const screenshotUrl = `https://image.thum.io/get/width/1200/crop/1800/noanimate/${encodeURIComponent(url)}`;
 
-        // Auto-login as system user for screenshot
-        await page.evaluate(() => {
-            localStorage.setItem('currentUser', 'system');
-            document.getElementById('loginScreen').style.display = 'none';
-            document.getElementById('appContainer').style.display = 'block';
+        return new Promise((resolve, reject) => {
+            const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
+            const filename = `schedule-${timestamp}.png`;
+            const filepath = path.join(SCREENSHOT_DIR, filename);
+            const file = fsSync.createWriteStream(filepath);
+
+            https.get(screenshotUrl, (response) => {
+                response.pipe(file);
+                file.on('finish', () => {
+                    file.close();
+                    console.log('Screenshot saved:', filepath);
+                    resolve(filepath);
+                });
+            }).on('error', (err) => {
+                fsSync.unlinkSync(filepath);
+                console.error('Screenshot download error:', err);
+                reject(err);
+            });
         });
-
-        await page.waitForTimeout(1000);
-
-        // Take screenshot
-        const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
-        const filename = `schedule-${timestamp}.png`;
-        const filepath = path.join(SCREENSHOT_DIR, filename);
-
-        await page.screenshot({ path: filepath, fullPage: true });
-
-        return filepath;
     } catch (error) {
         console.error('Screenshot error:', error);
         throw error;
-    } finally {
-        if (browser) {
-            await browser.close();
-        }
     }
 }
 
