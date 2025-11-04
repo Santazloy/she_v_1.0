@@ -32,8 +32,8 @@ async function initBot() {
         await bot.deleteWebHook({ drop_pending_updates: true });
         console.log('Webhook deleted, all pending updates dropped');
 
-        // Wait a bit for Telegram to process
-        await new Promise(resolve => setTimeout(resolve, 2000));
+        // Wait for Telegram to fully process the deletion
+        await new Promise(resolve => setTimeout(resolve, 5000));
 
         // Now start polling
         await bot.startPolling({

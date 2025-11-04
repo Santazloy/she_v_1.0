@@ -1,7 +1,17 @@
 #!/usr/bin/env bash
-# Install dependencies
+set -e
+
+echo "Installing dependencies..."
 npm install
 
-# Install Chrome for Puppeteer with timeout
+echo "Creating cache directory..."
+mkdir -p $PWD/.cache/puppeteer
+
+echo "Installing Chrome for Puppeteer..."
 export PUPPETEER_CACHE_DIR=$PWD/.cache/puppeteer
-timeout 300 npx puppeteer browsers install chrome || echo "Chrome installation completed or timed out"
+npx puppeteer browsers install chrome
+
+echo "Verifying Chrome installation..."
+ls -la $PWD/.cache/puppeteer/chrome/ || echo "Chrome directory not found"
+
+echo "Build complete!"
