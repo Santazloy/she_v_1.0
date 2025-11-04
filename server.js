@@ -17,7 +17,26 @@ const CHAT_ID = process.env.TELEGRAM_CHAT_ID;
 // Initialize bot only if credentials are provided
 let bot = null;
 if (BOT_TOKEN && CHAT_ID) {
-    bot = new TelegramBot(BOT_TOKEN, { polling: true });
+    bot = new TelegramBot(BOT_TOKEN, {
+        polling: {
+            interval: 300,
+            autoStart: true,
+            params: {
+                timeout: 10
+            }
+        }
+    });
+
+    // Handle polling errors gracefully
+    bot.on('polling_error', (error) => {
+        console.error('Telegram polling error:', error.message);
+        if (error.message.includes('409 Conflict')) {
+            console.log('Another bot instance is running. Stopping this instance polling...');
+            bot.stopPolling();
+        }
+    });
+
+    console.log('Telegram bot configured with token:', BOT_TOKEN.substring(0, 10) + '...');
 }
 
 // Middleware
@@ -161,7 +180,7 @@ async function takeScreenshot() {
 
         // Load the app
         const url = process.env.NODE_ENV === 'production'
-            ? 'https://escortwork.org'
+            ? 'https://she-v-1-0.onrender.com'
             : `http://localhost:${PORT}`;
 
         await page.goto(url, { waitUntil: 'networkidle0' });
