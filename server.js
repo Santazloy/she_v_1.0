@@ -25,26 +25,19 @@ async function initBot() {
     }
 
     try {
-        // Create bot without polling
-        bot = new TelegramBot(BOT_TOKEN, { polling: false });
+        // Create bot with webhook (no polling conflicts!)
+        bot = new TelegramBot(BOT_TOKEN);
 
-        // Force delete webhook and clear any conflicts
-        await bot.deleteWebHook({ drop_pending_updates: true });
-        console.log('Webhook deleted, all pending updates dropped');
+        // Set webhook URL
+        const webhookUrl = process.env.NODE_ENV === 'production'
+            ? 'https://she-v-1-0.onrender.com/webhook'
+            : `http://localhost:${PORT}/webhook`;
 
-        // Wait for Telegram to fully process the deletion
-        await new Promise(resolve => setTimeout(resolve, 5000));
-
-        // Now start polling
-        await bot.startPolling({
-            polling: {
-                interval: 300,
-                params: { timeout: 10 }
-            }
-        });
+        await bot.setWebHook(webhookUrl);
+        console.log('Webhook set to:', webhookUrl);
 
         botReady = true;
-        console.log('Telegram bot started successfully');
+        console.log('Telegram bot started successfully via webhook');
 
         // Register commands
         bot.onText(/\/all/, async (msg) => {
@@ -70,24 +63,6 @@ async function initBot() {
                 '\n' +
                 '📱 Веб-интерфейс: https://she-v-1-0.onrender.com'
             );
-        });
-
-        // Handle polling errors
-        bot.on('polling_error', (error) => {
-            console.error('Polling error:', error.message);
-        });
-
-        // Graceful shutdown
-        process.on('SIGTERM', async () => {
-            console.log('SIGTERM - stopping bot...');
-            if (bot) await bot.stopPolling();
-            process.exit(0);
-        });
-
-        process.on('SIGINT', async () => {
-            console.log('SIGINT - stopping bot...');
-            if (bot) await bot.stopPolling();
-            process.exit(0);
         });
 
     } catch (error) {
@@ -411,14 +386,25 @@ app.get('/api/health', (req, res) => {
     res.json({ status: 'ok', time: new Date().toISOString() });
 });
 
+// Telegram webhook endpoint
+app.post('/webhook', (req, res) => {
+    if (bot) {
+        bot.processUpdate(req.body);
+    }
+    res.sendStatus(200);
+});
+
 // Start server
 async function startServer() {
     await initDirectories();
-    await initBot();
 
-    app.listen(PORT, () => {
+    // Start Express first
+    app.listen(PORT, async () => {
         console.log(`Server running on port ${PORT}`);
         console.log(`Daily reset scheduled for 4:00 AM Shanghai time`);
+
+        // Then initialize bot with webhook
+        await initBot();
     });
 }
 
