@@ -17,42 +17,39 @@ const CHAT_ID = process.env.TELEGRAM_CHAT_ID;
 // Initialize bot only if credentials are provided
 let bot = null;
 if (BOT_TOKEN && CHAT_ID) {
-    // Clear any existing webhook first to avoid conflicts
-    const TelegramBotPolling = require('node-telegram-bot-api/lib/telegramPolling');
-
     bot = new TelegramBot(BOT_TOKEN, {
-        polling: false // Start with polling disabled
+        polling: {
+            interval: 300,
+            autoStart: false,
+            params: {
+                timeout: 10
+            }
+        }
     });
 
-    // Delete webhook and clear any pending updates
+    // Clear webhook before starting polling
     bot.deleteWebHook()
         .then(() => {
-            console.log('Webhook deleted, starting polling...');
-            return bot.startPolling({
-                restart: true,
-                polling: {
-                    interval: 300,
-                    params: {
-                        timeout: 10
-                    }
-                }
-            });
+            console.log('Webhook cleared, starting polling...');
+            bot.startPolling();
         })
         .catch((error) => {
-            console.error('Error starting bot:', error.message);
+            console.error('Error clearing webhook:', error.message);
+            // Try to start polling anyway
+            bot.startPolling();
         });
 
     // Handle polling errors gracefully
     bot.on('polling_error', (error) => {
         console.error('Telegram polling error:', error.message);
         if (error.message.includes('409 Conflict')) {
-            console.log('Conflict detected. Clearing and restarting...');
+            console.log('Conflict detected. Waiting 5 seconds and restarting...');
             bot.stopPolling();
             setTimeout(() => {
-                bot.deleteWebHook().then(() => {
-                    bot.startPolling({ restart: true });
-                });
-            }, 1000);
+                bot.deleteWebHook()
+                    .then(() => bot.startPolling())
+                    .catch(() => bot.startPolling());
+            }, 5000);
         }
     });
 
