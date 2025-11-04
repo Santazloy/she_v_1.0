@@ -27,9 +27,9 @@ async function initBot() {
         // Create bot with webhook (no polling conflicts!)
         bot = new TelegramBot(BOT_TOKEN);
 
-        // Set webhook URL
+        // Set webhook URL - must use Render URL, not custom domain
         const webhookUrl = process.env.NODE_ENV === 'production'
-            ? 'https://escortwork.org/webhook'
+            ? 'https://she-v-1-0.onrender.com/webhook'
             : `http://localhost:${PORT}/webhook`;
 
         await bot.setWebHook(webhookUrl);
