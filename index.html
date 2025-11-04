@@ -1,0 +1,907 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Shanghai Schedule</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            -webkit-tap-highlight-color: transparent;
+            -webkit-user-select: none;
+            user-select: none;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'PingFang SC', 'Hiragino Sans GB', 'Microsoft YaHei', sans-serif;
+            background: #000;
+            color: #fff;
+            min-height: 100vh;
+            overflow-x: hidden;
+        }
+
+        /* Login Screen */
+        .login-screen {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            min-height: 100vh;
+            background: #000;
+        }
+
+        .login-box {
+            background: #111;
+            border: 1px solid #333;
+            border-radius: 10px;
+            padding: 30px;
+            width: 90%;
+            max-width: 350px;
+        }
+
+        .login-title {
+            text-align: center;
+            font-size: 24px;
+            margin-bottom: 20px;
+            color: #fff;
+        }
+
+        .login-input {
+            width: 100%;
+            padding: 12px;
+            margin: 10px 0;
+            background: #000;
+            border: 1px solid #333;
+            color: #fff;
+            font-size: 16px;
+            border-radius: 5px;
+        }
+
+        .login-button {
+            width: 100%;
+            padding: 12px;
+            margin-top: 15px;
+            background: #333;
+            border: none;
+            color: #fff;
+            font-size: 16px;
+            border-radius: 5px;
+            cursor: pointer;
+        }
+
+        .login-button:active {
+            background: #444;
+        }
+
+        .error-msg {
+            color: #ff4444;
+            text-align: center;
+            margin-top: 10px;
+            font-size: 14px;
+        }
+
+        /* Main App */
+        .app-container {
+            display: none;
+            min-height: 100vh;
+            background: #000;
+        }
+
+        /* Header */
+        .header {
+            background: #000;
+            padding: 10px;
+            border-bottom: 1px solid #333;
+            position: sticky;
+            top: 0;
+            z-index: 100;
+        }
+
+        .time-display {
+            text-align: center;
+            font-size: 32px;
+            font-weight: bold;
+            margin-bottom: 5px;
+        }
+
+        .date-display {
+            text-align: center;
+            font-size: 14px;
+            color: #888;
+            margin-bottom: 10px;
+        }
+
+        /* Date Navigation */
+        .date-tabs {
+            display: flex;
+            justify-content: space-around;
+            padding: 10px 0;
+            border-bottom: 1px solid #333;
+        }
+
+        .date-tab {
+            flex: 1;
+            text-align: center;
+            padding: 8px;
+            color: #888;
+            border: none;
+            background: transparent;
+            font-size: 14px;
+            cursor: pointer;
+        }
+
+        .date-tab.active {
+            color: #fff;
+            border-bottom: 2px solid #fff;
+        }
+
+        /* Schedule Container */
+        .schedule-container {
+            padding: 0;
+        }
+
+        /* Schedule Grid */
+        .schedule-grid {
+            display: table;
+            width: 100%;
+            border-collapse: collapse;
+        }
+
+        .schedule-row {
+            display: table-row;
+            border-bottom: 1px solid #222;
+        }
+
+        .schedule-cell {
+            display: table-cell;
+            padding: 8px;
+            border-right: 1px solid #222;
+            vertical-align: middle;
+            text-align: center;
+            position: relative;
+        }
+
+        .schedule-cell:last-child {
+            border-right: none;
+        }
+
+        /* Table Headers */
+        .table-header {
+            background: #111;
+            position: sticky;
+            top: 0;
+        }
+
+        .table-header .schedule-cell {
+            font-weight: bold;
+            font-size: 18px;
+            padding: 12px 8px;
+            color: #fff;
+        }
+
+        /* Time Column */
+        .time-cell {
+            background: #0a0a0a;
+            font-size: 13px;
+            color: #888;
+            width: 60px;
+            font-weight: 500;
+        }
+
+        /* Data Cells */
+        .data-cell {
+            min-height: 40px;
+            position: relative;
+            cursor: pointer;
+            background: #000;
+        }
+
+        .data-cell:active {
+            background: #111;
+        }
+
+        /* Input Fields */
+        .cell-input {
+            width: 100%;
+            height: 100%;
+            min-height: 40px;
+            background: transparent;
+            border: none;
+            color: #fff;
+            text-align: center;
+            font-size: 14px;
+            padding: 5px;
+        }
+
+        .cell-input:focus {
+            outline: 1px solid #444;
+            background: #111;
+        }
+
+        /* Chinese Address Row */
+        .address-row {
+            background: #0a0a0a;
+        }
+
+        .address-row .data-cell {
+            font-size: 12px;
+            color: #888;
+        }
+
+        .address-input {
+            width: 100%;
+            background: transparent;
+            border: none;
+            color: #888;
+            text-align: center;
+            font-size: 12px;
+            padding: 8px 2px;
+        }
+
+        .address-input:focus {
+            outline: 1px solid #333;
+            background: #111;
+            color: #fff;
+        }
+
+        /* Special Markers */
+        .red-x {
+            color: #ff0000;
+            font-size: 24px;
+            font-weight: bold;
+        }
+
+        .green-check {
+            color: #00ff00;
+            font-size: 20px;
+        }
+
+        .yellow-marker {
+            background: rgba(255, 255, 0, 0.1);
+        }
+
+        /* Status Indicators */
+        .with-icon {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 5px;
+        }
+
+        .icon {
+            font-size: 16px;
+        }
+
+        .soccer-icon::after {
+            content: '⚽';
+        }
+
+        .time-icon::after {
+            content: '🕐';
+        }
+
+        /* Controls */
+        .controls {
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            background: #111;
+            border-top: 1px solid #333;
+            padding: 10px;
+            display: flex;
+            justify-content: space-around;
+            z-index: 100;
+        }
+
+        .control-btn {
+            background: #222;
+            border: 1px solid #444;
+            color: #fff;
+            padding: 10px 20px;
+            border-radius: 5px;
+            font-size: 14px;
+            cursor: pointer;
+            flex: 1;
+            margin: 0 5px;
+        }
+
+        .control-btn:active {
+            background: #333;
+        }
+
+        /* Activity Log */
+        .activity-log {
+            position: fixed;
+            bottom: 60px;
+            left: 10px;
+            right: 10px;
+            max-height: 150px;
+            background: rgba(0, 0, 0, 0.9);
+            border: 1px solid #333;
+            border-radius: 5px;
+            padding: 10px;
+            overflow-y: auto;
+            display: none;
+            z-index: 99;
+        }
+
+        .activity-log.show {
+            display: block;
+        }
+
+        .log-entry {
+            font-size: 11px;
+            color: #888;
+            margin: 2px 0;
+        }
+
+        .log-entry .time {
+            color: #4CAF50;
+        }
+
+        /* Add table dialog */
+        .add-dialog {
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background: #111;
+            border: 1px solid #444;
+            border-radius: 10px;
+            padding: 20px;
+            display: none;
+            z-index: 200;
+        }
+
+        .add-dialog.show {
+            display: block;
+        }
+
+        .dialog-title {
+            font-size: 18px;
+            margin-bottom: 15px;
+        }
+
+        .table-options {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 10px;
+            margin-bottom: 15px;
+        }
+
+        .table-option {
+            padding: 15px;
+            background: #222;
+            border: 1px solid #444;
+            border-radius: 5px;
+            text-align: center;
+            cursor: pointer;
+            font-size: 18px;
+            font-weight: bold;
+        }
+
+        .table-option:active {
+            background: #333;
+        }
+
+        .table-option.disabled {
+            opacity: 0.3;
+            cursor: not-allowed;
+        }
+
+        .close-dialog {
+            width: 100%;
+            padding: 10px;
+            background: #333;
+            border: none;
+            color: #fff;
+            border-radius: 5px;
+            cursor: pointer;
+        }
+
+        /* Overlay */
+        .overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0, 0, 0, 0.7);
+            display: none;
+            z-index: 150;
+        }
+
+        .overlay.show {
+            display: block;
+        }
+
+        /* Responsive adjustments */
+        @media (max-width: 768px) {
+            .schedule-cell {
+                font-size: 12px;
+                padding: 4px;
+            }
+            
+            .table-header .schedule-cell {
+                font-size: 14px;
+            }
+            
+            .time-cell {
+                font-size: 11px;
+                width: 45px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <!-- Login Screen -->
+    <div class="login-screen" id="loginScreen">
+        <div class="login-box">
+            <h1 class="login-title">上海排班系统</h1>
+            <input type="text" class="login-input" id="username" placeholder="用户名" value="kris">
+            <input type="password" class="login-input" id="password" placeholder="密码" value="12344321">
+            <button class="login-button" onclick="login()">登录</button>
+            <div class="error-msg" id="errorMsg"></div>
+        </div>
+    </div>
+
+    <!-- Main App -->
+    <div class="app-container" id="appContainer">
+        <!-- Header -->
+        <div class="header">
+            <div class="time-display" id="timeDisplay">13:18</div>
+            <div class="date-display" id="dateDisplay">4 ноября 2025г. в 12:39 — общая</div>
+        </div>
+
+        <!-- Date Tabs -->
+        <div class="date-tabs">
+            <button class="date-tab active" onclick="switchDate(0)" id="tab0">4.11</button>
+            <button class="date-tab" onclick="switchDate(1)" id="tab1">5.11</button>
+            <button class="date-tab" onclick="switchDate(2)" id="tab2">6.11</button>
+        </div>
+
+        <!-- Schedule Container -->
+        <div class="schedule-container" id="scheduleContainer"></div>
+
+        <!-- Controls -->
+        <div class="controls">
+            <button class="control-btn" onclick="showAddDialog()">➕</button>
+            <button class="control-btn" onclick="saveData()">💾</button>
+            <button class="control-btn" onclick="toggleLog()">📋</button>
+            <button class="control-btn" onclick="captureScreen()">📸</button>
+        </div>
+
+        <!-- Activity Log -->
+        <div class="activity-log" id="activityLog"></div>
+
+        <!-- Add Table Dialog -->
+        <div class="overlay" id="overlay" onclick="hideAddDialog()"></div>
+        <div class="add-dialog" id="addDialog">
+            <h3 class="dialog-title">选择桌台号</h3>
+            <div class="table-options">
+                <div class="table-option" onclick="addTable('111')">111</div>
+                <div class="table-option" onclick="addTable('222')">222</div>
+                <div class="table-option" onclick="addTable('333')">333</div>
+                <div class="table-option" onclick="addTable('555')">555</div>
+                <div class="table-option" onclick="addTable('666')">666</div>
+                <div class="table-option" onclick="addTable('888')">888</div>
+            </div>
+            <button class="close-dialog" onclick="hideAddDialog()">取消</button>
+        </div>
+    </div>
+
+    <script>
+        // Configuration
+        const USERS = {
+            'kris': '12344321',
+            'misha': '12344321',
+            'katya': '12344321',
+            'wang': '12344321',
+            'lion': '12344321'
+        };
+
+        const TIME_SLOTS = [
+            '12:00', '13:00', '14:00', '15:00', '16:00', '17:00',
+            '18:00', '19:00', '20:00', '21:00', '22:00', '23:00',
+            '00:00', '01:00', '02:00'
+        ];
+
+        // State
+        let currentUser = null;
+        let currentDate = 0;
+        let scheduleData = {};
+        let activityLog = [];
+
+        // Initialize
+        document.addEventListener('DOMContentLoaded', () => {
+            initializeData();
+            startClock();
+            loadDemoData();
+            
+            // Enter key support
+            document.getElementById('password').addEventListener('keypress', (e) => {
+                if (e.key === 'Enter') login();
+            });
+        });
+
+        function initializeData() {
+            const dates = getNextThreeDates();
+            dates.forEach(date => {
+                if (!scheduleData[date.key]) {
+                    scheduleData[date.key] = {
+                        tables: []
+                    };
+                }
+            });
+        }
+
+        function loadDemoData() {
+            const dates = getNextThreeDates();
+            
+            // Demo data for first day
+            scheduleData[dates[0].key] = {
+                tables: ['111', '333', '555']
+            };
+            
+            // Set demo slot data
+            if (!scheduleData[dates[0].key].slots) {
+                scheduleData[dates[0].key].slots = {};
+            }
+            
+            // Table 111 data
+            scheduleData[dates[0].key].slots['111'] = {
+                address: '新闻路与长沙路交汇处 (新闻路126号)',
+                '12:00': '✓',
+                '13:00': '',
+                '14:00': '',
+                '15:00': '',
+                '16:00': '',
+                '17:00': '',
+                '18:00': '',
+                '19:00': '',
+                '20:00': '⚽',
+                '21:00': '',
+                '22:00': '',
+                '23:00': '',
+                '00:00': '',
+                '01:00': '⚽',
+                '02:00': ''
+            };
+            
+            // Table 333 data
+            scheduleData[dates[0].key].slots['333'] = {
+                address: '距鹿路242號',
+                '12:00': '',
+                '13:00': '',
+                '14:00': '',
+                '15:00': '',
+                '16:00': '',
+                '17:00': '',
+                '18:00': '⚽',
+                '19:00': '',
+                '20:00': '',
+                '21:00': '',
+                '22:00': '',
+                '23:00': '',
+                '00:00': '',
+                '01:00': '',
+                '02:00': ''
+            };
+            
+            // Table 555 data
+            scheduleData[dates[0].key].slots['555'] = {
+                address: '麗園路708號',
+                '12:00': '',
+                '13:00': '',
+                '14:00': '',
+                '15:00': '',
+                '16:00': '',
+                '17:00': '',
+                '18:00': '',
+                '19:00': '7:30 🕐',
+                '20:00': '',
+                '21:00': '',
+                '22:00': '',
+                '23:00': '',
+                '00:00': '',
+                '01:00': '',
+                '02:00': ''
+            };
+
+            // Second day - one table
+            scheduleData[dates[1].key] = {
+                tables: ['111'],
+                slots: {
+                    '111': {
+                        address: '',
+                        '12:00': '❌',
+                        '13:00': '',
+                        '14:00': '',
+                        '15:00': '',
+                        '16:00': '',
+                        '17:00': '',
+                        '18:00': '',
+                        '19:00': '',
+                        '20:00': '',
+                        '21:00': '',
+                        '22:00': '',
+                        '23:00': '',
+                        '00:00': '',
+                        '01:00': '',
+                        '02:00': ''
+                    }
+                }
+            };
+        }
+
+        function getNextThreeDates() {
+            const dates = [];
+            const now = new Date();
+            
+            for (let i = 0; i < 3; i++) {
+                const date = new Date(now);
+                date.setDate(date.getDate() + i);
+                
+                const month = date.getMonth() + 1;
+                const day = date.getDate();
+                
+                dates.push({
+                    key: `${date.getFullYear()}-${String(month).padStart(2, '0')}-${String(day).padStart(2, '0')}`,
+                    display: `${day}.${month}`
+                });
+            }
+            
+            return dates;
+        }
+
+        function startClock() {
+            updateClock();
+            setInterval(updateClock, 1000);
+        }
+
+        function updateClock() {
+            const now = new Date(new Date().toLocaleString("en-US", {timeZone: "Asia/Shanghai"}));
+            const hours = String(now.getHours()).padStart(2, '0');
+            const minutes = String(now.getMinutes()).padStart(2, '0');
+            
+            if (document.getElementById('timeDisplay')) {
+                document.getElementById('timeDisplay').textContent = `${hours}:${minutes}`;
+            }
+        }
+
+        function login() {
+            const username = document.getElementById('username').value.toLowerCase();
+            const password = document.getElementById('password').value;
+            
+            if (USERS[username] && USERS[username] === password) {
+                currentUser = username;
+                document.getElementById('loginScreen').style.display = 'none';
+                document.getElementById('appContainer').style.display = 'block';
+                updateDateDisplay();
+                renderSchedule();
+                logActivity(`${username} вошел в систему`);
+            } else {
+                document.getElementById('errorMsg').textContent = '用户名或密码错误';
+                setTimeout(() => {
+                    document.getElementById('errorMsg').textContent = '';
+                }, 3000);
+            }
+        }
+
+        function updateDateDisplay() {
+            const dates = getNextThreeDates();
+            document.getElementById('tab0').textContent = dates[0].display;
+            document.getElementById('tab1').textContent = dates[1].display;
+            document.getElementById('tab2').textContent = dates[2].display;
+            
+            const now = new Date();
+            const months = ['января', 'февраля', 'марта', 'апреля', 'мая', 'июня', 
+                          'июля', 'августа', 'сентября', 'октября', 'ноября', 'декабря'];
+            const dateStr = `${now.getDate()} ${months[now.getMonth()]} ${now.getFullYear()}г. в ${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')} — общая`;
+            document.getElementById('dateDisplay').textContent = dateStr;
+        }
+
+        function switchDate(index) {
+            currentDate = index;
+            
+            // Update active tab
+            document.querySelectorAll('.date-tab').forEach(tab => tab.classList.remove('active'));
+            document.getElementById(`tab${index}`).classList.add('active');
+            
+            renderSchedule();
+        }
+
+        function renderSchedule() {
+            const container = document.getElementById('scheduleContainer');
+            const dates = getNextThreeDates();
+            const currentData = scheduleData[dates[currentDate].key];
+            const tables = currentData.tables || [];
+            
+            let html = '<div class="schedule-grid">';
+            
+            // Header row
+            html += '<div class="schedule-row table-header">';
+            html += '<div class="schedule-cell time-cell"></div>';
+            tables.forEach(table => {
+                html += `<div class="schedule-cell">${table}</div>`;
+            });
+            html += '</div>';
+            
+            // Address row
+            html += '<div class="schedule-row address-row">';
+            html += '<div class="schedule-cell time-cell"></div>';
+            tables.forEach(table => {
+                const address = currentData.slots?.[table]?.address || '';
+                html += `<div class="schedule-cell data-cell">
+                    <input type="text" class="address-input" 
+                        placeholder="地址" 
+                        value="${address}"
+                        onchange="updateAddress('${table}', this.value)">
+                </div>`;
+            });
+            html += '</div>';
+            
+            // Time slots
+            TIME_SLOTS.forEach(time => {
+                html += '<div class="schedule-row">';
+                html += `<div class="schedule-cell time-cell">${time}</div>`;
+                
+                tables.forEach(table => {
+                    const value = currentData.slots?.[table]?.[time] || '';
+                    const isSpecial = value.includes('❌') || value.includes('⚽') || value.includes('✓');
+                    
+                    html += `<div class="schedule-cell data-cell">
+                        <input type="text" class="cell-input ${isSpecial ? 'with-icon' : ''}" 
+                            value="${value}"
+                            onchange="updateSlot('${table}', '${time}', this.value)"
+                            onfocus="this.select()">
+                    </div>`;
+                });
+                
+                html += '</div>';
+            });
+            
+            html += '</div>';
+            container.innerHTML = html;
+        }
+
+        function updateAddress(table, value) {
+            const dates = getNextThreeDates();
+            const dateKey = dates[currentDate].key;
+            
+            if (!scheduleData[dateKey].slots) {
+                scheduleData[dateKey].slots = {};
+            }
+            if (!scheduleData[dateKey].slots[table]) {
+                scheduleData[dateKey].slots[table] = {};
+            }
+            
+            scheduleData[dateKey].slots[table].address = value;
+            saveToLocalStorage();
+            logActivity(`${currentUser} обновил адрес стола ${table}`);
+        }
+
+        function updateSlot(table, time, value) {
+            const dates = getNextThreeDates();
+            const dateKey = dates[currentDate].key;
+            
+            if (!scheduleData[dateKey].slots) {
+                scheduleData[dateKey].slots = {};
+            }
+            if (!scheduleData[dateKey].slots[table]) {
+                scheduleData[dateKey].slots[table] = {};
+            }
+            
+            scheduleData[dateKey].slots[table][time] = value;
+            saveToLocalStorage();
+            
+            const action = value ? 'записал' : 'очистил';
+            logActivity(`${currentUser} ${action} ${time} для стола ${table}`);
+        }
+
+        function showAddDialog() {
+            const dates = getNextThreeDates();
+            const currentData = scheduleData[dates[currentDate].key];
+            const existingTables = currentData.tables || [];
+            
+            // Update available options
+            document.querySelectorAll('.table-option').forEach(option => {
+                const tableNum = option.textContent;
+                if (existingTables.includes(tableNum)) {
+                    option.classList.add('disabled');
+                    option.onclick = null;
+                } else {
+                    option.classList.remove('disabled');
+                    option.onclick = () => addTable(tableNum);
+                }
+            });
+            
+            document.getElementById('overlay').classList.add('show');
+            document.getElementById('addDialog').classList.add('show');
+        }
+
+        function hideAddDialog() {
+            document.getElementById('overlay').classList.remove('show');
+            document.getElementById('addDialog').classList.remove('show');
+        }
+
+        function addTable(tableNum) {
+            const dates = getNextThreeDates();
+            const dateKey = dates[currentDate].key;
+            
+            if (!scheduleData[dateKey].tables) {
+                scheduleData[dateKey].tables = [];
+            }
+            
+            if (!scheduleData[dateKey].tables.includes(tableNum)) {
+                scheduleData[dateKey].tables.push(tableNum);
+                scheduleData[dateKey].tables.sort((a, b) => parseInt(a) - parseInt(b));
+                
+                saveToLocalStorage();
+                renderSchedule();
+                logActivity(`${currentUser} добавил стол ${tableNum}`);
+            }
+            
+            hideAddDialog();
+        }
+
+        function saveData() {
+            saveToLocalStorage();
+            alert('✅ Данные сохранены');
+            logActivity(`${currentUser} сохранил данные`);
+        }
+
+        function saveToLocalStorage() {
+            localStorage.setItem('scheduleData', JSON.stringify(scheduleData));
+            localStorage.setItem('activityLog', JSON.stringify(activityLog));
+        }
+
+        function toggleLog() {
+            const log = document.getElementById('activityLog');
+            log.classList.toggle('show');
+        }
+
+        function logActivity(message) {
+            const now = new Date();
+            const time = `${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}:${String(now.getSeconds()).padStart(2, '0')}`;
+            
+            activityLog.unshift({
+                time: time,
+                message: message
+            });
+            
+            if (activityLog.length > 50) {
+                activityLog = activityLog.slice(0, 50);
+            }
+            
+            updateLogDisplay();
+        }
+
+        function updateLogDisplay() {
+            const logContainer = document.getElementById('activityLog');
+            logContainer.innerHTML = activityLog.map(entry => 
+                `<div class="log-entry"><span class="time">[${entry.time}]</span> ${entry.message}</div>`
+            ).join('');
+        }
+
+        function captureScreen() {
+            alert('📸 Скриншот будет отправлен в Telegram\n(В демо-версии недоступно)');
+            logActivity(`${currentUser} сделал скриншот`);
+        }
+
+        // Auto-refresh every 2 seconds
+        setInterval(() => {
+            const saved = localStorage.getItem('scheduleData');
+            if (saved) {
+                const newData = JSON.parse(saved);
+                if (JSON.stringify(newData) !== JSON.stringify(scheduleData)) {
+                    scheduleData = newData;
+                    renderSchedule();
+                }
+            }
+        }, 2000);
+    </script>
+</body>
+</html>
