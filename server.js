@@ -157,9 +157,17 @@ async function takeScreenshot() {
         // Try to get executable path
         let execPath;
         try {
-            execPath = process.env.PUPPETEER_EXECUTABLE_PATH || puppeteer.executablePath();
+            // First try environment variable
+            if (process.env.PUPPETEER_EXECUTABLE_PATH) {
+                execPath = process.env.PUPPETEER_EXECUTABLE_PATH;
+            } else {
+                // Then try to get from puppeteer
+                execPath = await puppeteer.executablePath();
+            }
+            console.log('Using Chrome executable:', execPath);
         } catch (error) {
-            throw new Error('Chrome not installed. Screenshots are not available on this environment. Consider upgrading to Starter plan or using an external screenshot service.');
+            console.error('Failed to find Chrome:', error);
+            throw new Error('Chrome not found. Screenshots unavailable.');
         }
 
         browser = await puppeteer.launch({
@@ -293,11 +301,9 @@ if (bot) {
         } catch (error) {
             console.error('Screenshot error for /all command:', error.message);
             bot.sendMessage(msg.chat.id,
-                '❌ Скриншоты недоступны на Free tier Render.\n\n' +
-                '💡 Решение:\n' +
-                '1. Обновитесь до Starter plan ($7/мес)\n' +
-                '2. Или используйте веб-интерфейс: https://she-v-1-0.onrender.com\n\n' +
-                'Все функции расписания работают онлайн!'
+                '⚠️ Скриншот недоступен. Проверьте Chrome/ENV.\n\n' +
+                'Ошибка: ' + error.message + '\n\n' +
+                '💡 Используйте веб-интерфейс: https://she-v-1-0.onrender.com'
             );
         }
     });
