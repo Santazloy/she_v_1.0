@@ -2,10 +2,10 @@ services:
   - type: web
     name: shanghai-schedule
     env: node
-    buildCommand: npm install
+    buildCommand: ./render-build.sh
     startCommand: npm start
     envVars:
       - key: NODE_ENV
         value: production
       - key: PORT
-        value: 3000
+        value: 10000
