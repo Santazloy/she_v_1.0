@@ -29,7 +29,7 @@ async function initBot() {
 
         // Set webhook URL
         const webhookUrl = process.env.NODE_ENV === 'production'
-            ? 'https://she-v-1-0.onrender.com/webhook'
+            ? 'https://escortwork.org/webhook'
             : `http://localhost:${PORT}/webhook`;
 
         await bot.setWebHook(webhookUrl);
@@ -48,8 +48,8 @@ async function initBot() {
             } catch (error) {
                 console.error('Screenshot error for /all command:', error.message);
                 bot.sendMessage(msg.chat.id,
-                    '⚠️ Скриншоты недоступны на Free tier Render (нужно 2GB RAM).\n\n' +
-                    '💡 Используйте веб-интерфейс: https://she-v-1-0.onrender.com'
+                    '⚠️ Не удалось сделать скриншот.\n\n' +
+                    '💡 Используйте веб-интерфейс: https://escortwork.org'
                 );
             }
         });
@@ -60,7 +60,7 @@ async function initBot() {
                 'Команды:\n' +
                 '/all - Получить текущее расписание\n' +
                 '\n' +
-                '📱 Веб-интерфейс: https://she-v-1-0.onrender.com'
+                '📱 Веб-интерфейс: https://escortwork.org'
             );
         });
 
@@ -190,11 +190,11 @@ async function takeScreenshot() {
 
         // URL to screenshot
         const url = process.env.NODE_ENV === 'production'
-            ? 'https://she-v-1-0.onrender.com'
+            ? 'https://escortwork.org'
             : `http://localhost:${PORT}`;
 
-        // Use screenshot.guru API (free, no signup)
-        const screenshotUrl = `https://image.thum.io/get/width/1200/crop/1800/noanimate/${encodeURIComponent(url)}`;
+        // Use ApiFlash for better reliability
+        const screenshotUrl = `https://api.apiflash.com/v1/urltoimage?access_key=demo&url=${encodeURIComponent(url)}&format=png&width=1200&height=1800&full_page=true`;
 
         return new Promise((resolve, reject) => {
             const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
