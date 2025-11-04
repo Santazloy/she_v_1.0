@@ -73,7 +73,6 @@ async function initBot() {
 // Middleware
 app.use(cors());
 app.use(express.json());
-app.use(express.static('.'));
 
 // Data directory setup
 const DATA_DIR = path.join(__dirname, 'data');
@@ -318,9 +317,23 @@ app.post('/api/screenshot', async (req, res) => {
     }
 });
 
-// Health check endpoint
+// Health check endpoints
 app.get('/api/health', (req, res) => {
+    res.json({ status: 'ok', time: new Date().toISOString(), bot: botReady });
+});
+
+app.get('/health', (req, res) => {
     res.json({ status: 'ok', time: new Date().toISOString() });
+});
+
+// Root endpoint for Render health check
+app.get('/', (req, res, next) => {
+    // Check if request is from health checker (no HTML accept header)
+    if (!req.headers.accept || !req.headers.accept.includes('text/html')) {
+        return res.json({ status: 'ok', service: 'shanghai-schedule' });
+    }
+    // Otherwise serve static files
+    next();
 });
 
 // Telegram webhook endpoint
@@ -330,6 +343,9 @@ app.post('/webhook', (req, res) => {
     }
     res.sendStatus(200);
 });
+
+// Serve static files (must be after all API routes)
+app.use(express.static('.'));
 
 // Start server
 async function startServer() {
