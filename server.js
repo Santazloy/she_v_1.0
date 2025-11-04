@@ -150,51 +150,63 @@ app.post('/api/activity', async (req, res) => {
     }
 });
 
+// Helper function to resolve Chrome executable
+const fsSync = require('fs');
+
+async function resolveChromeExecutable() {
+    if (process.env.PUPPETEER_EXECUTABLE_PATH && fsSync.existsSync(process.env.PUPPETEER_EXECUTABLE_PATH)) {
+        console.log('Using PUPPETEER_EXECUTABLE_PATH:', process.env.PUPPETEER_EXECUTABLE_PATH);
+        return process.env.PUPPETEER_EXECUTABLE_PATH;
+    }
+
+    try {
+        const ep = await puppeteer.executablePath();
+        if (ep && fsSync.existsSync(ep)) {
+            console.log('Using Puppeteer auto-detected path:', ep);
+            return ep;
+        }
+    } catch (e) {
+        console.log('Puppeteer auto-detection failed:', e.message);
+    }
+
+    const base = path.join(__dirname, '.cache', 'puppeteer');
+    console.log('Checking project cache:', base);
+
+    if (fsSync.existsSync(base)) {
+        const vendors = fsSync.readdirSync(base);
+        console.log('Found vendors:', vendors);
+
+        for (const v of vendors) {
+            const versionsRoot = path.join(base, v);
+            if (!fsSync.existsSync(versionsRoot)) continue;
+
+            const versions = fsSync.readdirSync(versionsRoot);
+            versions.sort().reverse();
+            console.log(`Versions for ${v}:`, versions);
+
+            for (const ver of versions) {
+                const candidate = path.join(versionsRoot, ver, 'chrome-linux64', 'chrome');
+                console.log('Checking candidate:', candidate);
+                if (fsSync.existsSync(candidate)) {
+                    console.log('Found Chrome:', candidate);
+                    return candidate;
+                }
+            }
+        }
+    }
+
+    throw new Error('Chrome not found');
+}
+
 // Screenshot functionality
 async function takeScreenshot() {
     let browser;
     try {
-        // Try to get executable path
-        let execPath;
-        const fsSync = require('fs');
-
-        // First try environment variable
-        if (process.env.PUPPETEER_EXECUTABLE_PATH) {
-            execPath = process.env.PUPPETEER_EXECUTABLE_PATH;
-            console.log('Using PUPPETEER_EXECUTABLE_PATH:', execPath);
-        } else {
-            // Try to find Chrome in node_modules/.cache (default Puppeteer location)
-            try {
-                const nodeModulesCache = path.join(__dirname, 'node_modules', '.cache', 'puppeteer', 'chrome');
-                console.log('Checking node_modules cache:', nodeModulesCache);
-
-                if (fsSync.existsSync(nodeModulesCache)) {
-                    const versions = fsSync.readdirSync(nodeModulesCache);
-                    console.log('Available Chrome versions in node_modules:', versions);
-
-                    if (versions.length > 0) {
-                        execPath = path.join(nodeModulesCache, versions[0], 'chrome-linux64', 'chrome');
-                        console.log('Found Chrome in node_modules:', execPath);
-                    }
-                }
-            } catch (e) {
-                console.log('Could not check node_modules cache:', e.message);
-            }
-
-            // Fallback: try puppeteer auto-detection
-            if (!execPath) {
-                try {
-                    execPath = await puppeteer.executablePath();
-                    console.log('Using Puppeteer auto-detected path:', execPath);
-                } catch (error) {
-                    console.error('Failed to find Chrome anywhere:', error.message);
-                    throw new Error('Chrome not found. Screenshots unavailable.');
-                }
-            }
-        }
+        const execPath = await resolveChromeExecutable();
 
         browser = await puppeteer.launch({
             headless: 'new',
+            executablePath: execPath,
             args: [
                 '--no-sandbox',
                 '--disable-setuid-sandbox',
@@ -202,8 +214,7 @@ async function takeScreenshot() {
                 '--disable-accelerated-2d-canvas',
                 '--disable-gpu',
                 '--window-size=1920x1080'
-            ],
-            executablePath: execPath
+            ]
         });
 
         const page = await browser.newPage();
