@@ -716,21 +716,22 @@
 
         function getNextThreeDates() {
             const dates = [];
-            const now = new Date();
-            
+            // Use Shanghai time
+            const now = new Date(new Date().toLocaleString("en-US", {timeZone: "Asia/Shanghai"}));
+
             for (let i = 0; i < 3; i++) {
                 const date = new Date(now);
                 date.setDate(date.getDate() + i);
-                
+
                 const month = date.getMonth() + 1;
                 const day = date.getDate();
-                
+
                 dates.push({
                     key: `${date.getFullYear()}-${String(month).padStart(2, '0')}-${String(day).padStart(2, '0')}`,
                     display: `${day}.${month}`
                 });
             }
-            
+
             return dates;
         }
 
@@ -869,9 +870,10 @@
             document.getElementById('tab0').textContent = dates[0].display;
             document.getElementById('tab1').textContent = dates[1].display;
             document.getElementById('tab2').textContent = dates[2].display;
-            
-            const now = new Date();
-            const months = ['января', 'февраля', 'марта', 'апреля', 'мая', 'июня', 
+
+            // Use Shanghai time
+            const now = new Date(new Date().toLocaleString("en-US", {timeZone: "Asia/Shanghai"}));
+            const months = ['января', 'февраля', 'марта', 'апреля', 'мая', 'июня',
                           'июля', 'августа', 'сентября', 'октября', 'ноября', 'декабря'];
             const dateStr = `${now.getDate()} ${months[now.getMonth()]} ${now.getFullYear()}г. в ${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')} — общая`;
             document.getElementById('dateDisplay').textContent = dateStr;
@@ -1075,18 +1077,19 @@
         }
 
         function logActivity(message) {
-            const now = new Date();
+            // Use Shanghai time
+            const now = new Date(new Date().toLocaleString("en-US", {timeZone: "Asia/Shanghai"}));
             const time = `${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}:${String(now.getSeconds()).padStart(2, '0')}`;
-            
+
             activityLog.unshift({
                 time: time,
                 message: message
             });
-            
+
             if (activityLog.length > 50) {
                 activityLog = activityLog.slice(0, 50);
             }
-            
+
             updateLogDisplay();
         }
 
