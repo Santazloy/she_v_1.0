@@ -830,10 +830,31 @@
 
         function renderSchedule() {
             const container = document.getElementById('scheduleContainer');
+            if (!container) {
+                console.error('Schedule container not found');
+                return;
+            }
+
             const dates = getNextThreeDates();
-            const currentData = scheduleData[dates[currentDate].key];
+            const dateKey = dates[currentDate].key;
+
+            // Ensure data exists for current date
+            if (!scheduleData[dateKey]) {
+                console.log(`Creating empty data for ${dateKey}`);
+                scheduleData[dateKey] = {
+                    tables: [],
+                    slots: {}
+                };
+            }
+
+            const currentData = scheduleData[dateKey];
             const tables = currentData.tables || [];
-            
+
+            console.log(`Rendering schedule for ${dateKey}:`, {
+                tables: tables,
+                hasSlots: !!currentData.slots
+            });
+
             let html = '<div class="schedule-grid">';
             
             // Header row
@@ -920,7 +941,14 @@
 
         function showAddDialog() {
             const dates = getNextThreeDates();
-            const currentData = scheduleData[dates[currentDate].key];
+            const dateKey = dates[currentDate].key;
+
+            // Ensure data exists
+            if (!scheduleData[dateKey]) {
+                scheduleData[dateKey] = { tables: [], slots: {} };
+            }
+
+            const currentData = scheduleData[dateKey];
             const existingTables = currentData.tables || [];
             
             // Update available options
@@ -1059,7 +1087,14 @@
         // Delete dialog functions
         function showDeleteDialog() {
             const dates = getNextThreeDates();
-            const currentData = scheduleData[dates[currentDate].key];
+            const dateKey = dates[currentDate].key;
+
+            // Ensure data exists
+            if (!scheduleData[dateKey]) {
+                scheduleData[dateKey] = { tables: [], slots: {} };
+            }
+
+            const currentData = scheduleData[dateKey];
             const existingTables = currentData.tables || [];
             
             if (existingTables.length === 0) {
