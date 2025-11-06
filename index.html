@@ -509,6 +509,7 @@
                 <button class="header-btn" onclick="showDeleteDialog()" title="Удалить столбец">-</button>
                 <span class="time-display-inner" id="timeDisplay">13:18</span>
                 <button class="header-btn" onclick="showAddDialog()" title="Добавить столбец">+</button>
+                <button class="header-btn" onclick="toggleActivityLog()" title="Журнал действий">📋</button>
             </div>
             <div class="date-display" id="dateDisplay">4 ноября 2025г. в 12:39 — общая</div>
         </div>
@@ -522,12 +523,6 @@
 
         <!-- Schedule Container -->
         <div class="schedule-container" id="scheduleContainer"></div>
-
-
-        <!-- Activity Log Button -->
-        <div style="position: fixed; bottom: 20px; right: 20px; z-index: 90;">
-            <button class="log-button" onclick="toggleActivityLog()">📋 Журнал действий</button>
-        </div>
 
         <!-- Add Table Dialog -->
         <div class="overlay" id="overlay" onclick="hideAddDialog()"></div>
