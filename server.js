@@ -84,28 +84,44 @@ async function initBot() {
             );
         });
 
-        bot.onText(/\/pin/, async (msg) => {
+        bot.onText(/^\/pin(?:@[\w_]+)?$/, async (msg) => {
+            const chatId = msg.chat.id;
             try {
-                await bot.sendMessage(msg.chat.id,
-                    '📋 *Расписание Shanghai*\n\n' +
-                    'Нажмите кнопку ниже для открытия расписания',
+                // Send message with web_app button
+                const sent = await bot.sendMessage(chatId,
+                    '🗓️ Расписание Shanghai\n\n' +
+                    'Нажмите кнопку ниже, чтобы открыть расписание',
                     {
-                        parse_mode: 'Markdown',
+                        disable_web_page_preview: true,
                         reply_markup: {
                             inline_keyboard: [[
                                 {
                                     text: '📋 Открыть расписание',
-                                    url: 'https://escortwork.org'
+                                    web_app: { url: 'https://escortwork.org' }
                                 }
                             ]]
                         }
                     }
                 );
-                console.log('/pin command executed - message sent to chat:', msg.chat.id);
+
+                // Try to pin the message
+                try {
+                    await bot.pinChatMessage(chatId, sent.message_id, { disable_notification: true });
+                    console.log('/pin command executed - message sent and pinned in chat:', chatId);
+                } catch (pinError) {
+                    console.log('Could not pin message (bot may not be admin):', pinError.message);
+                    await bot.sendMessage(chatId,
+                        '💡 Сообщение отправлено, но не закреплено.\n' +
+                        'Закрепите его вручную или дайте боту права администратора.'
+                    );
+                }
             } catch (error) {
-                console.error('Error handling /pin command:', error.message);
-                bot.sendMessage(msg.chat.id,
-                    '⚠️ Не удалось отправить сообщение'
+                console.error('PIN ERROR:', error.message);
+                await bot.sendMessage(chatId,
+                    '⚠️ Не смог отправить сообщение.\n\n' +
+                    '💡 Проверьте:\n' +
+                    '1. В BotFather установлен домен: /setdomain → https://escortwork.org\n' +
+                    '2. Бот имеет права администратора (если нужно закрепление)'
                 );
             }
         });
