@@ -99,10 +99,37 @@
         }
 
         .time-display {
-            text-align: center;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 15px;
             font-size: 32px;
             font-weight: bold;
             margin-bottom: 5px;
+        }
+
+        .time-display-inner {
+            font-size: 32px;
+        }
+
+        .header-btn {
+            background: #222;
+            border: 1px solid #444;
+            color: #fff;
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            font-size: 24px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.2s;
+        }
+
+        .header-btn:active {
+            background: #333;
+            transform: scale(0.95);
         }
 
         .date-display {
@@ -281,54 +308,23 @@
             content: '🕐';
         }
 
-        /* Controls */
-        .controls {
-            position: fixed;
-            bottom: 0;
-            left: 0;
-            right: 0;
-            background: #111;
-            border-top: 1px solid #333;
-            padding: 10px;
-            display: flex;
-            justify-content: space-around;
-            z-index: 100;
-        }
-
-        .control-btn {
-            background: #222;
-            border: 1px solid #444;
-            color: #fff;
-            padding: 10px 20px;
-            border-radius: 5px;
-            font-size: 14px;
-            cursor: pointer;
-            flex: 1;
-            margin: 0 5px;
-        }
-
-        .control-btn:active {
-            background: #333;
-        }
-
-        /* Activity Log */
+        /* Activity Log - Below tables */
         .activity-log {
-            position: fixed;
-            bottom: 60px;
-            left: 10px;
-            right: 10px;
-            max-height: 150px;
-            background: rgba(0, 0, 0, 0.9);
-            border: 1px solid #333;
-            border-radius: 5px;
-            padding: 10px;
+            background: #000;
+            border-top: 1px solid #333;
+            padding: 15px;
+            max-height: 200px;
             overflow-y: auto;
-            display: none;
-            z-index: 99;
         }
 
-        .activity-log.show {
-            display: block;
+        .activity-log-title {
+            font-size: 16px;
+            font-weight: bold;
+            margin-bottom: 10px;
+            color: #fff;
+            display: flex;
+            align-items: center;
+            gap: 8px;
         }
 
         .log-entry {
@@ -451,7 +447,11 @@
     <div class="app-container" id="appContainer">
         <!-- Header -->
         <div class="header">
-            <div class="time-display" id="timeDisplay">13:18</div>
+            <div class="time-display">
+                <button class="header-btn" onclick="showDeleteDialog()" title="Удалить столбец">-</button>
+                <span class="time-display-inner" id="timeDisplay">13:18</span>
+                <button class="header-btn" onclick="showAddDialog()" title="Добавить столбец">+</button>
+            </div>
             <div class="date-display" id="dateDisplay">4 ноября 2025г. в 12:39 — общая</div>
         </div>
 
@@ -465,16 +465,9 @@
         <!-- Schedule Container -->
         <div class="schedule-container" id="scheduleContainer"></div>
 
-        <!-- Controls -->
-        <div class="controls">
-            <button class="control-btn" onclick="showAddDialog()">➕</button>
-            <button class="control-btn" onclick="saveData()">💾</button>
-            <button class="control-btn" onclick="toggleLog()">📋</button>
-            <button class="control-btn" onclick="captureScreen()">📸</button>
-        </div>
 
         <!-- Activity Log -->
-        <div class="activity-log" id="activityLog"></div>
+        <div class="activity-log"><div class="activity-log-title">📋 Журнал действий</div><div id="activityLog"></div></div>
 
         <!-- Add Table Dialog -->
         <div class="overlay" id="overlay" onclick="hideAddDialog()"></div>
@@ -852,6 +845,12 @@
                 html += '</div>';
             });
             
+        <!-- Delete Table Dialog -->
+        <div class="add-dialog" id="deleteDialog">
+            <h3 class="dialog-title">Выберите столбец для удаления</h3>
+            <div class="table-options" id="deleteOptions"></div>
+            <button class="close-dialog" onclick="hideDeleteDialog()">Отмена</button>
+        </div>
             html += '</div>';
             container.innerHTML = html;
         }
@@ -1038,6 +1037,70 @@
                 }
             }
         }, 2000);
+
+        // Delete dialog functions
+        function showDeleteDialog() {
+            const dates = getNextThreeDates();
+            const currentData = scheduleData[dates[currentDate].key];
+            const existingTables = currentData.tables || [];
+            
+            if (existingTables.length === 0) {
+                alert('Нет столбцов для удаления');
+                return;
+            }
+            
+            const optionsHTML = existingTables.map(table => 
+                `<div class="table-option" onclick="deleteTable('${table}')">${table}</div>`
+            ).join('');
+            
+            document.getElementById('deleteOptions').innerHTML = optionsHTML;
+            document.getElementById('overlay').classList.add('show');
+            document.getElementById('deleteDialog').classList.add('show');
+        }
+
+        function hideDeleteDialog() {
+            document.getElementById('overlay').classList.remove('show');
+            document.getElementById('deleteDialog').classList.remove('show');
+        }
+
+        function deleteTable(tableNum) {
+            const dates = getNextThreeDates();
+            const dateKey = dates[currentDate].key;
+            
+            if (confirm(`Удалить столбец ${tableNum}?`)) {
+                const index = scheduleData[dateKey].tables.indexOf(tableNum);
+                if (index > -1) {
+                    scheduleData[dateKey].tables.splice(index, 1);
+                    
+                    if (scheduleData[dateKey].slots && scheduleData[dateKey].slots[tableNum]) {
+                        delete scheduleData[dateKey].slots[tableNum];
+                    }
+                    
+                    saveToLocalStorage();
+                    saveToServer();
+                    renderSchedule();
+                    logActivity(`${currentUser} удалил стол ${tableNum}`);
+                }
+            }
+            
+            hideDeleteDialog();
+        }
+
+        // Auto-screenshot for /all command
+        setInterval(async () => {
+            try {
+                const response = await fetch(`${API_BASE}/api/trigger-screenshot`);
+                if (response.ok) {
+                    const data = await response.json();
+                    if (data.pending) {
+                        console.log('Auto-capturing screenshot for /all command...');
+                        await captureScreen();
+                    }
+                }
+            } catch (error) {
+                console.error('Screenshot trigger check failed:', error);
+            }
+        }, 3000);
     </script>
 </body>
 </html>

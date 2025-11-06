@@ -43,20 +43,22 @@ async function initBot() {
         // Register commands
         bot.onText(/\/all/, async (msg) => {
             try {
-                // Send request to generate screenshot
+                // Send request to generate screenshot via special endpoint
                 await bot.sendMessage(msg.chat.id,
-                    '⏳ Создаю скриншот текущего расписания...\n\n' +
-                    '💡 Или просмотрите онлайн: https://escortwork.org'
+                    '⏳ Создаю скриншот текущего расписания...'
                 );
 
-                // Note: actual screenshot will be sent when user clicks 📸 button
-                console.log('/all command received - user should use web interface');
+                // Trigger screenshot generation
+                console.log('/all command received - triggering screenshot');
+
+                // Store pending screenshot request
+                global.pendingScreenshotChatId = msg.chat.id;
 
             } catch (error) {
                 console.error('Error handling /all command:', error.message);
                 bot.sendMessage(msg.chat.id,
-                    '⚠️ Для получения скриншота используйте кнопку 📸 в веб-интерфейсе\n\n' +
-                    '💡 Веб-интерфейс: https://escortwork.org'
+                    '⚠️ Не удалось создать скриншот\n\n' +
+                    '💡 Попробуйте позже или используйте веб-интерфейс: https://escortwork.org'
                 );
             }
         });
@@ -217,7 +219,11 @@ app.post('/api/screenshot', upload.single('screenshot'), async (req, res) => {
         const dateStr = `${now.getDate()}.${now.getMonth() + 1}.${now.getFullYear()}`;
         const timeStr = `${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`;
 
-        await bot.sendPhoto(CHAT_ID, imageBuffer, {
+        // Check if this is from /all command
+        const targetChatId = global.pendingScreenshotChatId || CHAT_ID;
+        global.pendingScreenshotChatId = null; // Clear pending request
+
+        await bot.sendPhoto(targetChatId, imageBuffer, {
             caption: `📋 Расписание на ${dateStr} в ${timeStr}\n👤 Отправил: ${user}`,
             contentType: 'image/jpeg'
         });
@@ -250,6 +256,14 @@ app.post('/api/screenshot', upload.single('screenshot'), async (req, res) => {
             error: 'Failed to send screenshot'
         });
     }
+});
+
+// API endpoint to trigger screenshot (for /all command)
+app.get('/api/trigger-screenshot', (req, res) => {
+    res.json({
+        success: true,
+        pending: !!global.pendingScreenshotChatId
+    });
 });
 
 // Get next three dates helper
