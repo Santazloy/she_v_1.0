@@ -86,7 +86,7 @@ async function initBot() {
                             inline_keyboard: [[
                                 {
                                     text: '📋 Открыть расписание',
-                                    web_app: { url: 'https://escortwork.org' }
+                                    url: 'https://escortwork.org'
                                 }
                             ]]
                         }
