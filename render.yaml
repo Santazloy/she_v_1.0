@@ -13,7 +13,5 @@ services:
         sync: false
       - key: TELEGRAM_CHAT_ID
         sync: false
-      - key: PUPPETEER_CACHE_DIR
-        value: /opt/render/project/src/.cache/puppeteer
-      - key: PUPPETEER_EXECUTABLE_PATH
-        value: /opt/render/project/src/.cache/puppeteer/chrome/linux-131.0.6778.69/chrome-linux64/chrome
+      - key: PUPPETEER_SKIP_CHROMIUM_DOWNLOAD
+        value: true

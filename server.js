@@ -182,14 +182,37 @@ app.post('/api/activity', async (req, res) => {
 
 // Screenshot functionality
 const fsSync = require('fs');
-const puppeteer = require('puppeteer');
+let puppeteer;
+let screenshotsEnabled = false;
+
+// Try to load Puppeteer, but don't fail if it's not available
+try {
+    puppeteer = require('puppeteer');
+    screenshotsEnabled = true;
+    console.log('Puppeteer loaded successfully - screenshots enabled');
+} catch (error) {
+    console.log('Puppeteer not available - screenshots disabled (this is OK on Free tier)');
+}
 
 async function takeScreenshot() {
+    if (!screenshotsEnabled || !puppeteer) {
+        throw new Error('Screenshots are not available on this server configuration. Please use the web interface at https://escortwork.org');
+    }
+
     let browser;
     try {
         browser = await puppeteer.launch({
             headless: 'new',
-            args: ['--no-sandbox', '--disable-setuid-sandbox']
+            args: [
+                '--no-sandbox',
+                '--disable-setuid-sandbox',
+                '--disable-dev-shm-usage',
+                '--disable-gpu',
+                '--no-first-run',
+                '--no-zygote',
+                '--single-process'
+            ],
+            timeout: 30000
         });
 
         const page = await browser.newPage();
@@ -216,10 +239,16 @@ async function takeScreenshot() {
 
         return filepath;
     } catch (error) {
-        console.error('Screenshot error:', error);
-        throw error;
+        console.error('Screenshot error:', error.message);
+        throw new Error('Screenshot failed. This feature requires more resources than available on Free tier. Please upgrade to Starter plan or use the web interface.');
     } finally {
-        if (browser) await browser.close();
+        if (browser) {
+            try {
+                await browser.close();
+            } catch (e) {
+                console.error('Error closing browser:', e.message);
+            }
+        }
     }
 }
 
@@ -245,16 +274,50 @@ async function archiveAndResetSchedule() {
     try {
         console.log('Starting daily archive and reset...');
 
-        // Take screenshot before reset
-        const screenshotPath = await takeScreenshot();
-
         // Get current schedule data
         const data = await readScheduleData();
 
-        // Send screenshot to Telegram with today's date
-        const now = new Date(new Date().toLocaleString('en-US', { timeZone: 'Asia/Shanghai' }));
-        const dateStr = `${now.getDate()}.${now.getMonth() + 1}.${now.getFullYear()}`;
-        await sendScreenshotToTelegram(screenshotPath, `📅 Расписание за ${dateStr}`);
+        // Try to take screenshot before reset (but don't fail if it doesn't work)
+        if (screenshotsEnabled) {
+            try {
+                const screenshotPath = await takeScreenshot();
+
+                // Send screenshot to Telegram with today's date
+                const now = new Date(new Date().toLocaleString('en-US', { timeZone: 'Asia/Shanghai' }));
+                const dateStr = `${now.getDate()}.${now.getMonth() + 1}.${now.getFullYear()}`;
+                await sendScreenshotToTelegram(screenshotPath, `📅 Расписание за ${dateStr}`);
+
+                console.log('Screenshot sent successfully');
+            } catch (screenshotError) {
+                console.log('Screenshot not available for daily archive, continuing with reset:', screenshotError.message);
+
+                // Send text message instead of screenshot
+                if (bot) {
+                    const now = new Date(new Date().toLocaleString('en-US', { timeZone: 'Asia/Shanghai' }));
+                    const dateStr = `${now.getDate()}.${now.getMonth() + 1}.${now.getFullYear()}`;
+                    await bot.sendMessage(CHAT_ID,
+                        `📅 Ежедневный архив за ${dateStr}\n\n` +
+                        `✅ Данные сохранены\n` +
+                        `🔄 Расписание обновлено\n\n` +
+                        `💡 Просмотреть: https://escortwork.org`
+                    ).catch(err => console.log('Could not send archive notification:', err.message));
+                }
+            }
+        } else {
+            console.log('Screenshots disabled, skipping screenshot archive');
+
+            // Send text notification only
+            if (bot) {
+                const now = new Date(new Date().toLocaleString('en-US', { timeZone: 'Asia/Shanghai' }));
+                const dateStr = `${now.getDate()}.${now.getMonth() + 1}.${now.getFullYear()}`;
+                await bot.sendMessage(CHAT_ID,
+                    `📅 Ежедневный архив за ${dateStr}\n\n` +
+                    `✅ Данные сохранены\n` +
+                    `🔄 Расписание обновлено\n\n` +
+                    `💡 Просмотреть: https://escortwork.org`
+                ).catch(err => console.log('Could not send archive notification:', err.message));
+            }
+        }
 
         // Get dates
         const dates = getNextThreeDates();
@@ -269,7 +332,8 @@ async function archiveAndResetSchedule() {
 
         console.log('Archive and reset completed');
     } catch (error) {
-        console.error('Error in archive and reset:', error);
+        console.error('Error in archive and reset:', error.message);
+        // Continue running even if archive fails
     }
 }
 
