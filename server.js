@@ -34,6 +34,15 @@ async function initBot() {
             ? 'https://escortwork.org/webhook'
             : `http://localhost:${PORT}/webhook`;
 
+        // Delete existing webhook first to avoid conflicts
+        try {
+            await bot.deleteWebHook();
+            console.log('Cleared existing webhook');
+        } catch (err) {
+            console.log('No existing webhook to clear');
+        }
+
+        // Set new webhook
         await bot.setWebHook(WEBHOOK_URL);
         console.log('Webhook set to:', WEBHOOK_URL);
 
