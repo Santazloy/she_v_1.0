@@ -308,33 +308,43 @@
             content: '🕐';
         }
 
-        /* Activity Log - Below tables */
+        /* Activity Log - Below tables (Chat style) */
         .activity-log {
-            background: #000;
-            border-top: 1px solid #333;
+            background: #0a0a0a;
+            border-top: 2px solid #333;
             padding: 15px;
-            max-height: 200px;
+            max-height: 300px;
             overflow-y: auto;
+            margin-top: 10px;
         }
 
         .activity-log-title {
             font-size: 16px;
             font-weight: bold;
-            margin-bottom: 10px;
+            margin-bottom: 15px;
             color: #fff;
             display: flex;
             align-items: center;
             gap: 8px;
+            padding-bottom: 10px;
+            border-bottom: 1px solid #222;
         }
 
         .log-entry {
-            font-size: 11px;
-            color: #888;
-            margin: 2px 0;
+            font-size: 13px;
+            color: #ddd;
+            margin: 8px 0;
+            padding: 8px 12px;
+            background: #111;
+            border-left: 3px solid #4CAF50;
+            border-radius: 4px;
+            line-height: 1.4;
         }
 
         .log-entry .time {
             color: #4CAF50;
+            font-weight: bold;
+            margin-right: 8px;
         }
 
         /* Add table dialog */
