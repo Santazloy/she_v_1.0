@@ -308,26 +308,74 @@
             content: '🕐';
         }
 
-        /* Activity Log - Below tables (Chat style) */
-        .activity-log {
+        /* Activity Log Button */
+        .log-button {
+            background: #222;
+            border: 1px solid #444;
+            color: #fff;
+            padding: 12px 20px;
+            border-radius: 25px;
+            font-size: 14px;
+            cursor: pointer;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.5);
+            transition: all 0.3s;
+        }
+
+        .log-button:active {
+            background: #333;
+            transform: scale(0.95);
+        }
+
+        /* Activity Log Dialog */
+        .activity-log-dialog {
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            max-height: 60vh;
             background: #0a0a0a;
             border-top: 2px solid #333;
             padding: 15px;
-            max-height: 300px;
             overflow-y: auto;
-            margin-top: 10px;
+            transform: translateY(100%);
+            transition: transform 0.3s ease-out;
+            z-index: 95;
+        }
+
+        .activity-log-dialog.show {
+            transform: translateY(0);
+        }
+
+        .activity-log-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 15px;
+            padding-bottom: 10px;
+            border-bottom: 1px solid #222;
         }
 
         .activity-log-title {
             font-size: 16px;
             font-weight: bold;
-            margin-bottom: 15px;
             color: #fff;
             display: flex;
             align-items: center;
             gap: 8px;
-            padding-bottom: 10px;
-            border-bottom: 1px solid #222;
+        }
+
+        .close-log-btn {
+            background: #333;
+            border: none;
+            color: #fff;
+            width: 30px;
+            height: 30px;
+            border-radius: 50%;
+            font-size: 18px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
         }
 
         .log-entry {
@@ -476,8 +524,10 @@
         <div class="schedule-container" id="scheduleContainer"></div>
 
 
-        <!-- Activity Log -->
-        <div class="activity-log"><div class="activity-log-title">📋 Журнал действий</div><div id="activityLog"></div></div>
+        <!-- Activity Log Button -->
+        <div style="position: fixed; bottom: 20px; right: 20px; z-index: 90;">
+            <button class="log-button" onclick="toggleActivityLog()">📋 Журнал действий</button>
+        </div>
 
         <!-- Add Table Dialog -->
         <div class="overlay" id="overlay" onclick="hideAddDialog()"></div>
@@ -499,6 +549,15 @@
             <h3 class="dialog-title">Выберите столбец для удаления</h3>
             <div class="table-options" id="deleteOptions"></div>
             <button class="close-dialog" onclick="hideDeleteDialog()">Отмена</button>
+        </div>
+
+        <!-- Activity Log Dialog -->
+        <div class="activity-log-dialog" id="activityLogDialog">
+            <div class="activity-log-header">
+                <div class="activity-log-title">📋 Журнал действий</div>
+                <button class="close-log-btn" onclick="toggleActivityLog()">×</button>
+            </div>
+            <div id="activityLog"></div>
         </div>
     </div>
 
@@ -1008,6 +1067,11 @@
         function toggleLog() {
             const log = document.getElementById('activityLog');
             log.classList.toggle('show');
+        }
+
+        function toggleActivityLog() {
+            const dialog = document.getElementById('activityLogDialog');
+            dialog.classList.toggle('show');
         }
 
         function logActivity(message) {
