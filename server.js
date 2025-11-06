@@ -290,37 +290,64 @@ function getNextThreeDates() {
 // Archive and reset schedule at 4 AM Shanghai time
 async function archiveAndResetSchedule() {
     try {
-        console.log('Starting daily archive and reset...');
+        console.log('Starting daily archive and reset at 4:00 AM Shanghai time...');
 
         // Get current schedule data
         const data = await readScheduleData();
 
-        // Send notification to Telegram
-        if (bot) {
-            const now = new Date(new Date().toLocaleString('en-US', { timeZone: 'Asia/Shanghai' }));
-            const dateStr = `${now.getDate()}.${now.getMonth() + 1}.${now.getFullYear()}`;
+        // Get yesterday's date (the one we need to remove)
+        const now = new Date(new Date().toLocaleString('en-US', { timeZone: 'Asia/Shanghai' }));
+        const yesterday = new Date(now);
+        yesterday.setDate(yesterday.getDate() - 1);
 
-            await bot.sendMessage(CHAT_ID,
-                `📅 Ежедневный архив за ${dateStr}\n\n` +
-                `✅ Данные сохранены\n` +
-                `🔄 Расписание обновлено\n\n` +
-                `💡 Текущее расписание: https://escortwork.org\n` +
-                `📸 Для скриншота используйте кнопку в интерфейсе`
-            ).catch(err => console.log('Could not send archive notification:', err.message));
+        const yesterdayKey = `${yesterday.getFullYear()}-${String(yesterday.getMonth() + 1).padStart(2, '0')}-${String(yesterday.getDate()).padStart(2, '0')}`;
+
+        console.log(`Removing data for: ${yesterdayKey}`);
+
+        // Remove yesterday's data
+        if (data.scheduleData && data.scheduleData[yesterdayKey]) {
+            console.log(`Deleting schedule for ${yesterdayKey}`);
+            delete data.scheduleData[yesterdayKey];
         }
 
-        // Get dates
-        const dates = getNextThreeDates();
+        // Add new day (day after tomorrow)
+        const newDay = new Date(now);
+        newDay.setDate(newDay.getDate() + 2); // Day after tomorrow
 
-        // Remove oldest day data
-        if (data.scheduleData && data.scheduleData[dates[0].key]) {
-            delete data.scheduleData[dates[0].key];
+        const newDayKey = `${newDay.getFullYear()}-${String(newDay.getMonth() + 1).padStart(2, '0')}-${String(newDay.getDate()).padStart(2, '0')}`;
+
+        console.log(`Adding new empty day: ${newDayKey}`);
+
+        // Create new day with empty schedule
+        if (!data.scheduleData[newDayKey]) {
+            data.scheduleData[newDayKey] = {
+                tables: [],
+                slots: {}
+            };
         }
 
         // Save updated data
         await writeScheduleData(data);
 
-        console.log('Archive and reset completed');
+        console.log('Archive and reset completed successfully');
+        console.log('Current days:', Object.keys(data.scheduleData));
+
+        // Send notification to Telegram
+        if (bot) {
+            const dateStr = `${yesterday.getDate()}.${yesterday.getMonth() + 1}.${yesterday.getFullYear()}`;
+            const newDates = getNextThreeDates();
+
+            await bot.sendMessage(CHAT_ID,
+                `🔄 Ежедневное обновление расписания\n\n` +
+                `🗑 Удалено: ${dateStr}\n` +
+                `📅 Текущие дни:\n` +
+                `  • ${newDates[0].display} (сегодня)\n` +
+                `  • ${newDates[1].display} (завтра)\n` +
+                `  • ${newDates[2].display} (послезавтра)\n\n` +
+                `💡 Расписание: https://escortwork.org`
+            ).catch(err => console.log('Could not send archive notification:', err.message));
+        }
+
     } catch (error) {
         console.error('Error in archive and reset:', error.message);
         // Continue running even if archive fails
