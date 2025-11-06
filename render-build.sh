@@ -5,5 +5,5 @@ echo "==> Installing dependencies..."
 npm install
 
 echo "==> Build complete!"
-echo "Note: Screenshots are disabled on Free tier (insufficient RAM)"
-echo "To enable screenshots, upgrade to Starter plan ($7/month)"
+echo "Screenshot method: html2canvas (browser-based)"
+echo "No Chrome/Puppeteer required - works on Free tier!"

@@ -979,9 +979,52 @@
             ).join('');
         }
 
-        function captureScreen() {
-            alert('📸 Скриншот будет отправлен в Telegram\n(В демо-версии недоступно)');
-            logActivity(`${currentUser} сделал скриншот`);
+        async function captureScreen() {
+            try {
+                // Load html2canvas if not already loaded
+                if (!window.html2canvas) {
+                    const script = document.createElement('script');
+                    script.src = 'https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js';
+                    document.head.appendChild(script);
+                    await new Promise(resolve => script.onload = resolve);
+                }
+
+                // Capture the schedule container
+                const element = document.getElementById('appContainer');
+                const canvas = await html2canvas(element, {
+                    backgroundColor: '#000',
+                    scale: 2,
+                    logging: false
+                });
+
+                // Convert to blob
+                canvas.toBlob(async (blob) => {
+                    const formData = new FormData();
+                    formData.append('screenshot', blob, 'schedule.jpg');
+                    formData.append('user', currentUser);
+
+                    try {
+                        const response = await fetch(`${API_BASE}/api/screenshot`, {
+                            method: 'POST',
+                            body: formData
+                        });
+
+                        if (response.ok) {
+                            alert('✅ Скриншот отправлен в Telegram');
+                            logActivity(`${currentUser} отправил скриншот`);
+                        } else {
+                            alert('⚠️ Не удалось отправить скриншот');
+                        }
+                    } catch (error) {
+                        console.error('Screenshot upload failed:', error);
+                        alert('⚠️ Ошибка при отправке скриншота');
+                    }
+                }, 'image/jpeg', 0.9);
+
+            } catch (error) {
+                console.error('Screenshot capture failed:', error);
+                alert('⚠️ Не удалось создать скриншот');
+            }
         }
 
         // Auto-refresh every 2 seconds

@@ -1,9 +1,11 @@
 const express = require('express');
 const cors = require('cors');
 const fs = require('fs').promises;
+const fsSync = require('fs');
 const path = require('path');
 const cron = require('node-cron');
 const TelegramBot = require('node-telegram-bot-api');
+const multer = require('multer');
 require('dotenv').config();
 
 const app = express();
@@ -28,7 +30,10 @@ async function initBot() {
         bot = new TelegramBot(BOT_TOKEN);
 
         // Set webhook URL
-        const WEBHOOK_URL = 'https://www.escortwork.org/webhook';
+        const WEBHOOK_URL = process.env.NODE_ENV === 'production'
+            ? 'https://escortwork.org/webhook'
+            : `http://localhost:${PORT}/webhook`;
+
         await bot.setWebHook(WEBHOOK_URL);
         console.log('Webhook set to:', WEBHOOK_URL);
 
@@ -38,17 +43,20 @@ async function initBot() {
         // Register commands
         bot.onText(/\/all/, async (msg) => {
             try {
-                const screenshotPath = await takeScreenshot();
-                const rs = fsSync.createReadStream(screenshotPath);
-                await bot.sendPhoto(msg.chat.id, rs, {
-                    caption: '📋 Актуальное расписание на сегодня',
-                    contentType: 'image/jpeg'
-                });
+                // Send request to generate screenshot
+                await bot.sendMessage(msg.chat.id,
+                    '⏳ Создаю скриншот текущего расписания...\n\n' +
+                    '💡 Или просмотрите онлайн: https://escortwork.org'
+                );
+
+                // Note: actual screenshot will be sent when user clicks 📸 button
+                console.log('/all command received - user should use web interface');
+
             } catch (error) {
-                console.error('Screenshot error for /all command:', error.message);
+                console.error('Error handling /all command:', error.message);
                 bot.sendMessage(msg.chat.id,
-                    '⚠️ Не удалось сделать скриншот.\n\n' +
-                    '💡 Используйте веб-интерфейс: https://escortwork.org'
+                    '⚠️ Для получения скриншота используйте кнопку 📸 в веб-интерфейсе\n\n' +
+                    '💡 Веб-интерфейс: https://escortwork.org'
                 );
             }
         });
@@ -57,9 +65,10 @@ async function initBot() {
             bot.sendMessage(msg.chat.id,
                 '👋 Привет! Я бот управления расписанием.\n\n' +
                 'Команды:\n' +
-                '/all - Получить текущее расписание\n' +
+                '/all - Информация о текущем расписании\n' +
                 '\n' +
-                '📱 Веб-интерфейс: https://escortwork.org'
+                '📱 Веб-интерфейс: https://escortwork.org\n' +
+                '📸 Используйте кнопку в интерфейсе для отправки скриншотов'
             );
         });
 
@@ -72,7 +81,14 @@ async function initBot() {
 
 // Middleware
 app.use(cors());
-app.use(express.json());
+app.use(express.json({ limit: '50mb' }));
+
+// Multer configuration for file uploads
+const storage = multer.memoryStorage();
+const upload = multer({
+    storage: storage,
+    limits: { fileSize: 10 * 1024 * 1024 } // 10MB limit
+});
 
 // Data directory setup
 const DATA_DIR = path.join(__dirname, 'data');
@@ -92,11 +108,6 @@ async function initDirectories() {
 // Get schedule data file path
 function getDataFilePath() {
     return path.join(DATA_DIR, 'schedule.json');
-}
-
-// Get activity log file path
-function getActivityLogPath() {
-    return path.join(DATA_DIR, 'activity.json');
 }
 
 // Read schedule data
@@ -180,162 +191,66 @@ app.post('/api/activity', async (req, res) => {
     }
 });
 
-// Screenshot functionality
-const fsSync = require('fs');
-let puppeteer;
-let screenshotsEnabled = false;
-
-// Try to load Puppeteer, but don't fail if it's not available
-try {
-    puppeteer = require('puppeteer');
-    screenshotsEnabled = true;
-    console.log('Puppeteer loaded successfully - screenshots enabled');
-} catch (error) {
-    console.log('Puppeteer not available - screenshots disabled (this is OK on Free tier)');
-}
-
-async function takeScreenshot() {
-    if (!screenshotsEnabled || !puppeteer) {
-        throw new Error('Screenshots are not available on this server configuration. Please use the web interface at https://escortwork.org');
+// Screenshot upload endpoint (receives image from browser)
+app.post('/api/screenshot', upload.single('screenshot'), async (req, res) => {
+    if (!bot) {
+        return res.status(503).json({
+            success: false,
+            error: 'Telegram bot not configured'
+        });
     }
 
-    let browser;
     try {
-        browser = await puppeteer.launch({
-            headless: 'new',
-            args: [
-                '--no-sandbox',
-                '--disable-setuid-sandbox',
-                '--disable-dev-shm-usage',
-                '--disable-gpu',
-                '--no-first-run',
-                '--no-zygote',
-                '--single-process'
-            ],
-            timeout: 30000
-        });
+        const imageBuffer = req.file.buffer;
+        const user = req.body.user || 'unknown';
 
-        const page = await browser.newPage();
-        await page.setViewport({ width: 1100, height: 1600 });
-
-        const url = process.env.NODE_ENV === 'production'
-            ? 'https://escortwork.org'
-            : `http://localhost:${PORT}`;
-
-        await page.goto(url, { waitUntil: 'networkidle0', timeout: 60000 });
-        await page.waitForTimeout(1200);
-
+        // Save screenshot to file
         const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
         const filename = `schedule-${timestamp}.jpg`;
         const filepath = path.join(SCREENSHOT_DIR, filename);
 
-        const el = await page.$('#appContainer');
-        if (!el) throw new Error('appContainer not found');
+        await fs.writeFile(filepath, imageBuffer);
+        console.log(`Screenshot saved: ${filepath} (${imageBuffer.length} bytes)`);
 
-        await el.screenshot({ path: filepath, type: 'jpeg', quality: 80 });
+        // Send to Telegram
+        const now = new Date(new Date().toLocaleString('en-US', { timeZone: 'Asia/Shanghai' }));
+        const dateStr = `${now.getDate()}.${now.getMonth() + 1}.${now.getFullYear()}`;
+        const timeStr = `${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`;
 
-        const { size } = await fs.stat(filepath);
-        console.log('Screenshot size:', size);
+        await bot.sendPhoto(CHAT_ID, imageBuffer, {
+            caption: `📋 Расписание на ${dateStr} в ${timeStr}\n👤 Отправил: ${user}`,
+            contentType: 'image/jpeg'
+        });
 
-        return filepath;
-    } catch (error) {
-        console.error('Screenshot error:', error.message);
-        throw new Error('Screenshot failed. This feature requires more resources than available on Free tier. Please upgrade to Starter plan or use the web interface.');
-    } finally {
-        if (browser) {
-            try {
-                await browser.close();
-            } catch (e) {
-                console.error('Error closing browser:', e.message);
-            }
-        }
-    }
-}
+        console.log('Screenshot sent to Telegram successfully');
 
-// Send screenshot to Telegram
-async function sendScreenshotToTelegram(filepath, caption = '') {
-    if (!bot) {
-        console.log('Telegram bot not configured, skipping screenshot send');
-        return false;
-    }
-    try {
-        const rs = fsSync.createReadStream(filepath);
-        await bot.sendPhoto(CHAT_ID, rs, { caption, contentType: 'image/jpeg' });
-        console.log('Screenshot sent to Telegram');
-        return true;
-    } catch (error) {
-        console.error('Error sending to Telegram:', error);
-        return false;
-    }
-}
-
-// Archive and reset schedule at 4 AM Shanghai time
-async function archiveAndResetSchedule() {
-    try {
-        console.log('Starting daily archive and reset...');
-
-        // Get current schedule data
-        const data = await readScheduleData();
-
-        // Try to take screenshot before reset (but don't fail if it doesn't work)
-        if (screenshotsEnabled) {
-            try {
-                const screenshotPath = await takeScreenshot();
-
-                // Send screenshot to Telegram with today's date
-                const now = new Date(new Date().toLocaleString('en-US', { timeZone: 'Asia/Shanghai' }));
-                const dateStr = `${now.getDate()}.${now.getMonth() + 1}.${now.getFullYear()}`;
-                await sendScreenshotToTelegram(screenshotPath, `📅 Расписание за ${dateStr}`);
-
-                console.log('Screenshot sent successfully');
-            } catch (screenshotError) {
-                console.log('Screenshot not available for daily archive, continuing with reset:', screenshotError.message);
-
-                // Send text message instead of screenshot
-                if (bot) {
-                    const now = new Date(new Date().toLocaleString('en-US', { timeZone: 'Asia/Shanghai' }));
-                    const dateStr = `${now.getDate()}.${now.getMonth() + 1}.${now.getFullYear()}`;
-                    await bot.sendMessage(CHAT_ID,
-                        `📅 Ежедневный архив за ${dateStr}\n\n` +
-                        `✅ Данные сохранены\n` +
-                        `🔄 Расписание обновлено\n\n` +
-                        `💡 Просмотреть: https://escortwork.org`
-                    ).catch(err => console.log('Could not send archive notification:', err.message));
+        // Clean up old screenshots (keep last 10)
+        try {
+            const files = await fs.readdir(SCREENSHOT_DIR);
+            const screenshots = files.filter(f => f.startsWith('schedule-')).sort();
+            if (screenshots.length > 10) {
+                for (let i = 0; i < screenshots.length - 10; i++) {
+                    await fs.unlink(path.join(SCREENSHOT_DIR, screenshots[i]));
                 }
             }
-        } else {
-            console.log('Screenshots disabled, skipping screenshot archive');
-
-            // Send text notification only
-            if (bot) {
-                const now = new Date(new Date().toLocaleString('en-US', { timeZone: 'Asia/Shanghai' }));
-                const dateStr = `${now.getDate()}.${now.getMonth() + 1}.${now.getFullYear()}`;
-                await bot.sendMessage(CHAT_ID,
-                    `📅 Ежедневный архив за ${dateStr}\n\n` +
-                    `✅ Данные сохранены\n` +
-                    `🔄 Расписание обновлено\n\n` +
-                    `💡 Просмотреть: https://escortwork.org`
-                ).catch(err => console.log('Could not send archive notification:', err.message));
-            }
+        } catch (cleanupError) {
+            console.error('Error cleaning up old screenshots:', cleanupError);
         }
 
-        // Get dates
-        const dates = getNextThreeDates();
+        res.json({
+            success: true,
+            message: 'Screenshot sent to Telegram',
+            size: imageBuffer.length
+        });
 
-        // Remove oldest day data
-        if (data.scheduleData && data.scheduleData[dates[0].key]) {
-            delete data.scheduleData[dates[0].key];
-        }
-
-        // Save updated data
-        await writeScheduleData(data);
-
-        console.log('Archive and reset completed');
     } catch (error) {
-        console.error('Error in archive and reset:', error.message);
-        // Continue running even if archive fails
+        console.error('Screenshot upload error:', error);
+        res.status(500).json({
+            success: false,
+            error: 'Failed to send screenshot'
+        });
     }
-}
+});
 
 // Get next three dates helper
 function getNextThreeDates() {
@@ -358,32 +273,60 @@ function getNextThreeDates() {
     return dates;
 }
 
+// Archive and reset schedule at 4 AM Shanghai time
+async function archiveAndResetSchedule() {
+    try {
+        console.log('Starting daily archive and reset...');
+
+        // Get current schedule data
+        const data = await readScheduleData();
+
+        // Send notification to Telegram
+        if (bot) {
+            const now = new Date(new Date().toLocaleString('en-US', { timeZone: 'Asia/Shanghai' }));
+            const dateStr = `${now.getDate()}.${now.getMonth() + 1}.${now.getFullYear()}`;
+
+            await bot.sendMessage(CHAT_ID,
+                `📅 Ежедневный архив за ${dateStr}\n\n` +
+                `✅ Данные сохранены\n` +
+                `🔄 Расписание обновлено\n\n` +
+                `💡 Текущее расписание: https://escortwork.org\n` +
+                `📸 Для скриншота используйте кнопку в интерфейсе`
+            ).catch(err => console.log('Could not send archive notification:', err.message));
+        }
+
+        // Get dates
+        const dates = getNextThreeDates();
+
+        // Remove oldest day data
+        if (data.scheduleData && data.scheduleData[dates[0].key]) {
+            delete data.scheduleData[dates[0].key];
+        }
+
+        // Save updated data
+        await writeScheduleData(data);
+
+        console.log('Archive and reset completed');
+    } catch (error) {
+        console.error('Error in archive and reset:', error.message);
+        // Continue running even if archive fails
+    }
+}
+
 // Schedule daily reset at 4 AM Shanghai time
 // Cron format: minute hour day month weekday
 cron.schedule('0 4 * * *', archiveAndResetSchedule, {
     timezone: 'Asia/Shanghai'
 });
 
-// API endpoint for manual screenshot
-app.post('/api/screenshot', async (req, res) => {
-    try {
-        const screenshotPath = await takeScreenshot();
-        res.json({
-            success: true,
-            message: 'Screenshot taken',
-            path: screenshotPath
-        });
-    } catch (error) {
-        res.status(500).json({
-            success: false,
-            error: 'Failed to take screenshot'
-        });
-    }
-});
-
 // Health check endpoints
 app.get('/api/health', (req, res) => {
-    res.json({ status: 'ok', time: new Date().toISOString(), bot: botReady });
+    res.json({
+        status: 'ok',
+        time: new Date().toISOString(),
+        bot: botReady,
+        screenshots: 'html2canvas'
+    });
 });
 
 app.get('/health', (req, res) => {
@@ -418,6 +361,7 @@ async function startServer() {
     // Start Express first
     app.listen(PORT, '0.0.0.0', async () => {
         console.log(`Server running on port ${PORT}`);
+        console.log(`Screenshot method: html2canvas (browser-based)`);
         console.log(`Daily reset scheduled for 4:00 AM Shanghai time`);
 
         // Then initialize bot with webhook (non-blocking)

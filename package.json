@@ -1,6 +1,6 @@
 {
   "name": "shanghai-schedule",
-  "version": "1.0.0",
+  "version": "2.0.0",
   "description": "Shanghai Schedule Mini App for Telegram",
   "main": "server.js",
   "scripts": {
@@ -11,12 +11,12 @@
     "node": ">=18.0.0"
   },
   "dependencies": {
-    "express": "^4.18.2",
     "cors": "^2.8.5",
-    "node-telegram-bot-api": "^0.64.0",
+    "dotenv": "^16.3.1",
+    "express": "^4.18.2",
+    "multer": "^2.0.2",
     "node-cron": "^3.0.3",
-    "puppeteer": "^21.11.0",
-    "dotenv": "^16.3.1"
+    "node-telegram-bot-api": "^0.64.0"
   },
   "devDependencies": {
     "nodemon": "^3.0.2"
