@@ -87,17 +87,18 @@ async function initBot() {
         bot.onText(/^\/pin(?:@[\w_]+)?$/, async (msg) => {
             const chatId = msg.chat.id;
             try {
-                // Send message with web_app button
+                // Send message with URL button (opens in browser)
                 const sent = await bot.sendMessage(chatId,
-                    '🗓️ Расписание Shanghai\n\n' +
-                    'Нажмите кнопку ниже, чтобы открыть расписание',
+                    '📋 *Расписание Shanghai*\n\n' +
+                    'Нажмите кнопку ниже для открытия расписания',
                     {
+                        parse_mode: 'Markdown',
                         disable_web_page_preview: true,
                         reply_markup: {
                             inline_keyboard: [[
                                 {
                                     text: '📋 Открыть расписание',
-                                    web_app: { url: 'https://escortwork.org' }
+                                    url: 'https://escortwork.org'
                                 }
                             ]]
                         }
@@ -118,10 +119,7 @@ async function initBot() {
             } catch (error) {
                 console.error('PIN ERROR:', error.message);
                 await bot.sendMessage(chatId,
-                    '⚠️ Не смог отправить сообщение.\n\n' +
-                    '💡 Проверьте:\n' +
-                    '1. В BotFather установлен домен: /setdomain → https://escortwork.org\n' +
-                    '2. Бот имеет права администратора (если нужно закрепление)'
+                    '⚠️ Не смог отправить сообщение: ' + error.message
                 );
             }
         });
