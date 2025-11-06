@@ -68,10 +68,37 @@ async function initBot() {
                 '👋 Привет! Я бот управления расписанием.\n\n' +
                 'Команды:\n' +
                 '/all - Информация о текущем расписании\n' +
+                '/pin - Отправить сообщение с кнопкой для закрепа\n' +
                 '\n' +
                 '📱 Веб-интерфейс: https://escortwork.org\n' +
                 '📸 Используйте кнопку в интерфейсе для отправки скриншотов'
             );
+        });
+
+        bot.onText(/\/pin/, async (msg) => {
+            try {
+                await bot.sendMessage(msg.chat.id,
+                    '📋 *Расписание Shanghai*\n\n' +
+                    'Нажмите кнопку ниже для открытия расписания',
+                    {
+                        parse_mode: 'Markdown',
+                        reply_markup: {
+                            inline_keyboard: [[
+                                {
+                                    text: '📋 Открыть расписание',
+                                    web_app: { url: 'https://escortwork.org' }
+                                }
+                            ]]
+                        }
+                    }
+                );
+                console.log('/pin command executed - message sent to chat:', msg.chat.id);
+            } catch (error) {
+                console.error('Error handling /pin command:', error.message);
+                bot.sendMessage(msg.chat.id,
+                    '⚠️ Не удалось отправить сообщение'
+                );
+            }
         });
 
     } catch (error) {
