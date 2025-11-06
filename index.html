@@ -483,6 +483,13 @@
             </div>
             <button class="close-dialog" onclick="hideAddDialog()">取消</button>
         </div>
+
+        <!-- Delete Table Dialog -->
+        <div class="add-dialog" id="deleteDialog">
+            <h3 class="dialog-title">Выберите столбец для удаления</h3>
+            <div class="table-options" id="deleteOptions"></div>
+            <button class="close-dialog" onclick="hideDeleteDialog()">Отмена</button>
+        </div>
     </div>
 
     <script>
@@ -844,13 +851,7 @@
                 
                 html += '</div>';
             });
-            
-        <!-- Delete Table Dialog -->
-        <div class="add-dialog" id="deleteDialog">
-            <h3 class="dialog-title">Выберите столбец для удаления</h3>
-            <div class="table-options" id="deleteOptions"></div>
-            <button class="close-dialog" onclick="hideDeleteDialog()">Отмена</button>
-        </div>
+
             html += '</div>';
             container.innerHTML = html;
         }
