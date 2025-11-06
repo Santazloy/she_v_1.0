@@ -754,7 +754,12 @@
         // Save data to server
         async function saveToServer() {
             try {
-                await fetch(`${API_BASE}/api/schedule`, {
+                console.log('📤 Saving data to server...', {
+                    tables: Object.keys(scheduleData).length,
+                    logs: activityLog.length
+                });
+
+                const response = await fetch(`${API_BASE}/api/schedule`, {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json'
@@ -764,8 +769,14 @@
                         activityLog
                     })
                 });
+
+                if (response.ok) {
+                    console.log('✅ Data saved to server successfully');
+                } else {
+                    console.error('❌ Server responded with error:', response.status);
+                }
             } catch (error) {
-                console.error('Failed to save to server:', error);
+                console.error('❌ Failed to save to server:', error);
             }
         }
 
@@ -777,8 +788,13 @@
                     if (response.ok) {
                         const data = await response.json();
                         if (JSON.stringify(data.scheduleData) !== JSON.stringify(scheduleData)) {
+                            console.log('📥 Syncing data from server');
                             scheduleData = data.scheduleData;
                             activityLog = data.activityLog || [];
+
+                            // Also update localStorage to keep in sync
+                            saveToLocalStorage();
+
                             renderSchedule();
                             updateLogDisplay();
                         }
@@ -1037,17 +1053,8 @@
             }
         }
 
-        // Auto-refresh every 2 seconds
-        setInterval(() => {
-            const saved = localStorage.getItem('scheduleData');
-            if (saved) {
-                const newData = JSON.parse(saved);
-                if (JSON.stringify(newData) !== JSON.stringify(scheduleData)) {
-                    scheduleData = newData;
-                    renderSchedule();
-                }
-            }
-        }, 2000);
+        // Note: Auto-refresh is handled by startAutoRefresh() function
+        // which syncs from server every 2 seconds
 
         // Delete dialog functions
         function showDeleteDialog() {
