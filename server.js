@@ -507,6 +507,83 @@ app.get('/api/health', (req, res) => {
     });
 });
 
+// Supabase connection test endpoint
+app.get('/api/test-supabase', async (req, res) => {
+    const results = {
+        config: {
+            hasSupabaseUrl: !!SUPABASE_URL,
+            hasSupabaseKey: !!SUPABASE_KEY,
+            supabaseUrl: SUPABASE_URL,
+            keyPrefix: SUPABASE_KEY?.substring(0, 20) + '...'
+        },
+        tests: {}
+    };
+
+    // Test 1: Basic fetch to google
+    try {
+        const response = await fetch('https://www.google.com', { method: 'HEAD' });
+        results.tests.basicFetch = {
+            success: response.ok,
+            status: response.status
+        };
+    } catch (error) {
+        results.tests.basicFetch = {
+            success: false,
+            error: error.message
+        };
+    }
+
+    // Test 2: Fetch to Supabase REST API
+    try {
+        const response = await fetch(`${SUPABASE_URL}/rest/v1/`, {
+            headers: {
+                'apikey': SUPABASE_KEY,
+                'Authorization': `Bearer ${SUPABASE_KEY}`
+            }
+        });
+        results.tests.supabaseRestApi = {
+            success: response.ok,
+            status: response.status,
+            statusText: response.statusText
+        };
+    } catch (error) {
+        results.tests.supabaseRestApi = {
+            success: false,
+            error: error.message,
+            cause: error.cause?.message
+        };
+    }
+
+    // Test 3: Supabase JS client query
+    if (supabase) {
+        try {
+            const { data, error } = await supabase
+                .from('schedule_data')
+                .select('id')
+                .limit(1);
+
+            results.tests.supabaseJsClient = {
+                success: !error,
+                error: error?.message,
+                dataReceived: !!data
+            };
+        } catch (error) {
+            results.tests.supabaseJsClient = {
+                success: false,
+                error: error.message,
+                cause: error.cause?.message
+            };
+        }
+    } else {
+        results.tests.supabaseJsClient = {
+            success: false,
+            error: 'Supabase client not initialized'
+        };
+    }
+
+    res.json(results);
+});
+
 app.get('/health', (req, res) => {
     res.json({ status: 'ok', time: new Date().toISOString() });
 });
