@@ -7,6 +7,7 @@ const cron = require('node-cron');
 const TelegramBot = require('node-telegram-bot-api');
 const multer = require('multer');
 const { createClient } = require('@supabase/supabase-js');
+const dns = require('dns').promises;
 require('dotenv').config();
 
 const app = express();
@@ -579,6 +580,96 @@ app.get('/api/test-supabase', async (req, res) => {
             success: false,
             error: 'Supabase client not initialized'
         };
+    }
+
+    res.json(results);
+});
+
+// DNS diagnostic endpoint
+app.get('/api/test-dns', async (req, res) => {
+    const results = {
+        timestamp: new Date().toISOString(),
+        tests: {}
+    };
+
+    // Test 1: Resolve google.com
+    try {
+        const addresses = await dns.resolve4('www.google.com');
+        results.tests.googleDns = {
+            success: true,
+            addresses: addresses
+        };
+    } catch (error) {
+        results.tests.googleDns = {
+            success: false,
+            error: error.message
+        };
+    }
+
+    // Test 2: Resolve supabase.com (main domain)
+    try {
+        const addresses = await dns.resolve4('supabase.com');
+        results.tests.supabaseMainDns = {
+            success: true,
+            addresses: addresses
+        };
+    } catch (error) {
+        results.tests.supabaseMainDns = {
+            success: false,
+            error: error.message
+        };
+    }
+
+    // Test 3: Resolve your Supabase project domain
+    const supabaseDomain = SUPABASE_URL?.replace('https://', '').replace('http://', '');
+    if (supabaseDomain) {
+        try {
+            const addresses = await dns.resolve4(supabaseDomain);
+            results.tests.supabaseProjectDns = {
+                success: true,
+                domain: supabaseDomain,
+                addresses: addresses
+            };
+        } catch (error) {
+            results.tests.supabaseProjectDns = {
+                success: false,
+                domain: supabaseDomain,
+                error: error.message,
+                code: error.code
+            };
+        }
+
+        // Test 4: Try AAAA (IPv6) record
+        try {
+            const addresses = await dns.resolve6(supabaseDomain);
+            results.tests.supabaseProjectDnsIPv6 = {
+                success: true,
+                domain: supabaseDomain,
+                addresses: addresses
+            };
+        } catch (error) {
+            results.tests.supabaseProjectDnsIPv6 = {
+                success: false,
+                domain: supabaseDomain,
+                error: error.message
+            };
+        }
+
+        // Test 5: ANY record
+        try {
+            const addresses = await dns.resolveAny(supabaseDomain);
+            results.tests.supabaseProjectDnsAny = {
+                success: true,
+                domain: supabaseDomain,
+                records: addresses
+            };
+        } catch (error) {
+            results.tests.supabaseProjectDnsAny = {
+                success: false,
+                domain: supabaseDomain,
+                error: error.message
+            };
+        }
     }
 
     res.json(results);
