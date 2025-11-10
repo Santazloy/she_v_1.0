@@ -181,6 +181,7 @@ async function readScheduleData() {
     // Try Supabase first
     if (supabase) {
         try {
+            console.log('[Supabase] Attempting to read from schedule_data...');
             const { data, error } = await supabase
                 .from('schedule_data')
                 .select('schedule_data, activity_log')
@@ -188,16 +189,26 @@ async function readScheduleData() {
                 .single();
 
             if (error) {
-                console.error('Supabase read error:', error.message);
+                console.error('[Supabase] Read error:', {
+                    message: error.message,
+                    details: error.details,
+                    hint: error.hint,
+                    code: error.code
+                });
                 throw error;
             }
 
+            console.log('[Supabase] ✅ Read successful');
             return {
                 scheduleData: data?.schedule_data || {},
                 activityLog: data?.activity_log || []
             };
         } catch (error) {
-            console.error('Failed to read from Supabase, falling back to file:', error.message);
+            console.error('[Supabase] Failed to read, falling back to file:', {
+                message: error.message,
+                cause: error.cause,
+                stack: error.stack?.split('\n')[0]
+            });
         }
     }
 
