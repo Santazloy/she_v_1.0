@@ -6,6 +6,7 @@ const path = require('path');
 const cron = require('node-cron');
 const TelegramBot = require('node-telegram-bot-api');
 const multer = require('multer');
+const { createClient } = require('@supabase/supabase-js');
 require('dotenv').config();
 
 const app = express();
@@ -14,6 +15,19 @@ const PORT = process.env.PORT || 3000;
 // Telegram bot configuration
 const BOT_TOKEN = process.env.TELEGRAM_BOT_TOKEN;
 const CHAT_ID = process.env.TELEGRAM_CHAT_ID;
+
+// Supabase configuration
+const SUPABASE_URL = process.env.SUPABASE_URL;
+const SUPABASE_KEY = process.env.SUPABASE_ANON_KEY;
+let supabase = null;
+
+// Initialize Supabase client
+if (SUPABASE_URL && SUPABASE_KEY) {
+    supabase = createClient(SUPABASE_URL, SUPABASE_KEY);
+    console.log('Supabase client initialized');
+} else {
+    console.log('Supabase credentials not provided, using file storage');
+}
 
 // Initialize bot only if credentials are provided
 let bot = null;
@@ -164,6 +178,30 @@ function getDataFilePath() {
 
 // Read schedule data
 async function readScheduleData() {
+    // Try Supabase first
+    if (supabase) {
+        try {
+            const { data, error } = await supabase
+                .from('schedule_data')
+                .select('schedule_data, activity_log')
+                .eq('data_key', 'main')
+                .single();
+
+            if (error) {
+                console.error('Supabase read error:', error.message);
+                throw error;
+            }
+
+            return {
+                scheduleData: data?.schedule_data || {},
+                activityLog: data?.activity_log || []
+            };
+        } catch (error) {
+            console.error('Failed to read from Supabase, falling back to file:', error.message);
+        }
+    }
+
+    // Fallback to file storage
     try {
         const data = await fs.readFile(getDataFilePath(), 'utf8');
         return JSON.parse(data);
@@ -178,8 +216,35 @@ async function readScheduleData() {
 
 // Write schedule data
 async function writeScheduleData(data) {
+    // Try Supabase first
+    if (supabase) {
+        try {
+            const { error } = await supabase
+                .from('schedule_data')
+                .upsert({
+                    data_key: 'main',
+                    schedule_data: data.scheduleData || {},
+                    activity_log: data.activityLog || []
+                }, {
+                    onConflict: 'data_key'
+                });
+
+            if (error) {
+                console.error('Supabase write error:', error.message);
+                throw error;
+            }
+
+            console.log('✅ Data saved to Supabase');
+            return true;
+        } catch (error) {
+            console.error('Failed to write to Supabase, falling back to file:', error.message);
+        }
+    }
+
+    // Fallback to file storage
     try {
         await fs.writeFile(getDataFilePath(), JSON.stringify(data, null, 2), 'utf8');
+        console.log('✅ Data saved to file');
         return true;
     } catch (error) {
         console.error('Error writing schedule data:', error);
