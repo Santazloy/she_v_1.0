@@ -473,14 +473,52 @@ async function archiveAndResetSchedule() {
             };
         }
 
-        // Transfer permanent notes to new first day (tomorrow, which is now today)
+        // Transfer permanent notes and addresses to new first day (tomorrow, which is now today)
         const tomorrow = new Date(now);
         tomorrow.setDate(tomorrow.getDate() + 1);
         const tomorrowKey = `${tomorrow.getFullYear()}-${String(tomorrow.getMonth() + 1).padStart(2, '0')}-${String(tomorrow.getDate()).padStart(2, '0')}`;
 
-        if (permanentNotes && data.scheduleData[tomorrowKey]) {
-            data.scheduleData[tomorrowKey].permanentNotes = permanentNotes;
-            console.log(`Transferred permanent notes to new first day: ${tomorrowKey}`);
+        if (data.scheduleData[tomorrowKey]) {
+            // Transfer permanent notes
+            if (permanentNotes) {
+                data.scheduleData[tomorrowKey].permanentNotes = permanentNotes;
+                console.log(`Transferred permanent notes to new first day: ${tomorrowKey}`);
+            }
+
+            // Preserve and transfer addresses from current first day
+            const todaySlots = data.scheduleData?.[todayKey]?.slots || {};
+            const addressesToPreserve = {};
+
+            // Collect all addresses from today
+            Object.keys(todaySlots).forEach(table => {
+                if (todaySlots[table]?.address) {
+                    addressesToPreserve[table] = todaySlots[table].address;
+                }
+            });
+
+            console.log('Preserving addresses:', Object.keys(addressesToPreserve).length > 0 ?
+                Object.keys(addressesToPreserve).map(t => `${t}: ${addressesToPreserve[t].substring(0, 20)}...`).join(', ') :
+                'none');
+
+            // Transfer addresses to tomorrow (new first day)
+            if (Object.keys(addressesToPreserve).length > 0) {
+                // Ensure slots structure exists
+                if (!data.scheduleData[tomorrowKey].slots) {
+                    data.scheduleData[tomorrowKey].slots = {};
+                }
+
+                // Transfer each address to corresponding table in tomorrow
+                Object.keys(addressesToPreserve).forEach(table => {
+                    // Ensure table slot exists
+                    if (!data.scheduleData[tomorrowKey].slots[table]) {
+                        data.scheduleData[tomorrowKey].slots[table] = {};
+                    }
+                    // Transfer the address
+                    data.scheduleData[tomorrowKey].slots[table].address = addressesToPreserve[table];
+                });
+
+                console.log(`Transferred ${Object.keys(addressesToPreserve).length} addresses to new first day: ${tomorrowKey}`);
+            }
         }
 
         // Save updated data
