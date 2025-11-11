@@ -433,8 +433,17 @@ async function archiveAndResetSchedule() {
         // Get current schedule data
         const data = await readScheduleData();
 
-        // Get yesterday's date (the one we need to remove)
+        // Get current dates
         const now = new Date(new Date().toLocaleString('en-US', { timeZone: 'Asia/Shanghai' }));
+
+        // Get today's key (which will become yesterday after reset)
+        const todayKey = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
+
+        // Preserve permanentNotes from current first day (today)
+        const permanentNotes = data.scheduleData?.[todayKey]?.permanentNotes || '';
+        console.log('Preserving permanent notes:', permanentNotes ? `${permanentNotes.substring(0, 50)}...` : 'empty');
+
+        // Get yesterday's date (the one we need to remove)
         const yesterday = new Date(now);
         yesterday.setDate(yesterday.getDate() - 1);
 
@@ -462,6 +471,16 @@ async function archiveAndResetSchedule() {
                 tables: [],
                 slots: {}
             };
+        }
+
+        // Transfer permanent notes to new first day (tomorrow, which is now today)
+        const tomorrow = new Date(now);
+        tomorrow.setDate(tomorrow.getDate() + 1);
+        const tomorrowKey = `${tomorrow.getFullYear()}-${String(tomorrow.getMonth() + 1).padStart(2, '0')}-${String(tomorrow.getDate()).padStart(2, '0')}`;
+
+        if (permanentNotes && data.scheduleData[tomorrowKey]) {
+            data.scheduleData[tomorrowKey].permanentNotes = permanentNotes;
+            console.log(`Transferred permanent notes to new first day: ${tomorrowKey}`);
         }
 
         // Save updated data

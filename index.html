@@ -471,20 +471,73 @@
             display: block;
         }
 
+        /* Permanent Notes Section */
+        .permanent-notes-section {
+            padding: 20px;
+            background: #0a0a0a;
+            border-top: 2px solid #333;
+            margin-top: 10px;
+        }
+
+        .notes-label {
+            font-size: 14px;
+            color: #4CAF50;
+            margin-bottom: 10px;
+            font-weight: bold;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .notes-input {
+            width: 100%;
+            min-height: 100px;
+            background: #111;
+            border: 1px solid #333;
+            border-radius: 8px;
+            color: #fff;
+            font-size: 14px;
+            padding: 12px;
+            font-family: inherit;
+            resize: vertical;
+            line-height: 1.5;
+            -webkit-user-select: text;
+            user-select: text;
+        }
+
+        .notes-input:focus {
+            outline: none;
+            border-color: #4CAF50;
+            background: #151515;
+        }
+
+        .notes-input::placeholder {
+            color: #555;
+        }
+
         /* Responsive adjustments */
         @media (max-width: 768px) {
             .schedule-cell {
                 font-size: 12px;
                 padding: 4px;
             }
-            
+
             .table-header .schedule-cell {
                 font-size: 14px;
             }
-            
+
             .time-cell {
                 font-size: 11px;
                 width: 45px;
+            }
+
+            .permanent-notes-section {
+                padding: 15px;
+            }
+
+            .notes-input {
+                font-size: 13px;
+                min-height: 80px;
             }
         }
     </style>
@@ -939,23 +992,36 @@
             TIME_SLOTS.forEach(time => {
                 html += '<div class="schedule-row">';
                 html += `<div class="schedule-cell time-cell">${time}</div>`;
-                
+
                 tables.forEach(table => {
                     const value = currentData.slots?.[table]?.[time] || '';
                     const isSpecial = value.includes('❌') || value.includes('⚽') || value.includes('✓');
-                    
+
                     html += `<div class="schedule-cell data-cell">
-                        <input type="text" class="cell-input ${isSpecial ? 'with-icon' : ''}" 
+                        <input type="text" class="cell-input ${isSpecial ? 'with-icon' : ''}"
                             value="${value}"
                             onchange="updateSlot('${table}', '${time}', this.value)"
                             onfocus="this.select()">
                     </div>`;
                 });
-                
+
                 html += '</div>';
             });
 
             html += '</div>';
+
+            // Add permanent notes section (only for first day)
+            if (currentDate === 0) {
+                const notes = currentData.permanentNotes || '';
+                html += `<div class="permanent-notes-section">
+                    <div class="notes-label">📝 Постоянные заметки (не удаляются при сбросе дня):</div>
+                    <textarea class="notes-input"
+                        placeholder="Введите важные заметки, которые не должны удаляться..."
+                        onchange="updatePermanentNotes(this.value)"
+                        onfocus="this.select()">${notes}</textarea>
+                </div>`;
+            }
+
             container.innerHTML = html;
         }
 
@@ -993,6 +1059,22 @@
 
             const action = value ? 'записал' : 'очистил';
             logActivity(`${currentUser} ${action} ${time} для стола ${table}`);
+        }
+
+        function updatePermanentNotes(value) {
+            const dates = getNextThreeDates();
+            const dateKey = dates[0].key; // Always save to first day (today)
+
+            if (!scheduleData[dateKey]) {
+                scheduleData[dateKey] = { tables: [], slots: {} };
+            }
+
+            scheduleData[dateKey].permanentNotes = value;
+            saveToLocalStorage();
+            saveToServer();
+
+            const action = value ? 'обновил' : 'очистил';
+            logActivity(`${currentUser} ${action} постоянные заметки`);
         }
 
         function showAddDialog() {
