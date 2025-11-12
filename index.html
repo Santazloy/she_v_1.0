@@ -132,6 +132,32 @@
             transform: scale(0.95);
         }
 
+        .reset-day-btn {
+            position: absolute;
+            left: 10px;
+            top: 50%;
+            transform: translateY(-50%);
+            padding: 8px 16px;
+            background: #d32f2f;
+            color: white;
+            border: none;
+            border-radius: 6px;
+            font-size: 14px;
+            font-weight: bold;
+            cursor: pointer;
+            transition: all 0.2s;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.3);
+        }
+
+        .reset-day-btn:hover {
+            background: #f44336;
+            transform: translateY(-50%) scale(1.05);
+        }
+
+        .reset-day-btn:active {
+            transform: translateY(-50%) scale(0.95);
+        }
+
         .date-display {
             text-align: center;
             font-size: 14px;
@@ -558,6 +584,7 @@
     <div class="app-container" id="appContainer">
         <!-- Header -->
         <div class="header">
+            <button class="reset-day-btn" onclick="confirmResetDay()" title="Сбросить день / 重置日期">🔄 Сброс</button>
             <div class="time-display">
                 <button class="header-btn" onclick="showDeleteDialog()" title="Удалить столбец">-</button>
                 <span class="time-display-inner" id="timeDisplay">13:18</span>
@@ -1281,6 +1308,54 @@
             }
             
             hideDeleteDialog();
+        }
+
+        // Manual day reset function with bilingual confirmation
+        async function confirmResetDay() {
+            const confirmMessage = `⚠️ ВНИМАНИЕ / 注意 ⚠️
+
+Вы действительно хотите сбросить день?
+您确定要重置日期吗?
+
+Это действие:
+此操作将:
+• Удалит вчерашний день / 删除昨天
+• Переместит расписание на 1 день вперед / 日程表向前移动1天
+• Сохранит постоянные заметки / 保留永久笔记
+• Сохранит адреса столов / 保留桌子地址
+
+Подтвердите сброс дня / 确认重置日期`;
+
+            if (confirm(confirmMessage)) {
+                try {
+                    console.log('User confirmed day reset - sending request...');
+
+                    const response = await fetch(`${API_BASE}/api/manual-reset`, {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json'
+                        }
+                    });
+
+                    if (response.ok) {
+                        alert('✅ Сброс дня выполнен успешно!\n✅ 日期重置成功!');
+                        logActivity(`${currentUser} выполнил ручной сброс дня`);
+
+                        // Reload data from server
+                        await loadFromServer();
+                        renderSchedule();
+                        updateDateDisplay();
+                    } else {
+                        const errorData = await response.json();
+                        alert(`⚠️ Ошибка при сбросе дня / 重置日期时出错\n\n${errorData.error || 'Unknown error'}`);
+                    }
+                } catch (error) {
+                    console.error('Day reset error:', error);
+                    alert('⚠️ Не удалось выполнить сброс дня\n⚠️ 无法重置日期');
+                }
+            } else {
+                console.log('User cancelled day reset');
+            }
         }
 
         // Auto-screenshot for /all command
