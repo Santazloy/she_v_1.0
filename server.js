@@ -3,7 +3,8 @@ const cors = require('cors');
 const fs = require('fs').promises;
 const fsSync = require('fs');
 const path = require('path');
-const cron = require('node-cron');
+// NOTE: node-cron is no longer used - manual reset button replaces auto-reset
+// const cron = require('node-cron');
 const TelegramBot = require('node-telegram-bot-api');
 const multer = require('multer');
 const { createClient } = require('@supabase/supabase-js');
