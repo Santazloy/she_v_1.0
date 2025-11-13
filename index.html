@@ -137,24 +137,22 @@
             left: 10px;
             top: 50%;
             transform: translateY(-50%);
-            padding: 8px 16px;
-            background: #d32f2f;
-            color: white;
-            border: none;
-            border-radius: 6px;
-            font-size: 14px;
-            font-weight: bold;
+            background: #222;
+            border: 1px solid #444;
+            color: #fff;
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            font-size: 20px;
             cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
             transition: all 0.2s;
-            box-shadow: 0 2px 4px rgba(0,0,0,0.3);
-        }
-
-        .reset-day-btn:hover {
-            background: #f44336;
-            transform: translateY(-50%) scale(1.05);
         }
 
         .reset-day-btn:active {
+            background: #333;
             transform: translateY(-50%) scale(0.95);
         }
 
@@ -584,7 +582,7 @@
     <div class="app-container" id="appContainer">
         <!-- Header -->
         <div class="header">
-            <button class="reset-day-btn" onclick="confirmResetDay()" title="Сбросить день / 重置日期">🔄 Сброс</button>
+            <button class="reset-day-btn" onclick="confirmResetDay()" title="Сбросить день / 重置日期">🔄</button>
             <div class="time-display">
                 <button class="header-btn" onclick="showDeleteDialog()" title="Удалить столбец">-</button>
                 <span class="time-display-inner" id="timeDisplay">13:18</span>
@@ -1037,17 +1035,16 @@
 
             html += '</div>';
 
-            // Add permanent notes section (only for first day)
-            if (currentDate === 0) {
-                const notes = currentData.permanentNotes || '';
-                html += `<div class="permanent-notes-section">
-                    <div class="notes-label">📝 Постоянные заметки (не удаляются при сбросе дня):</div>
-                    <textarea class="notes-input"
-                        placeholder="Введите важные заметки, которые не должны удаляться..."
-                        onchange="updatePermanentNotes(this.value)"
-                        onfocus="this.select()">${notes}</textarea>
-                </div>`;
-            }
+            // Add shared notes section (visible in ALL days, synced across all days)
+            // Get notes from global shared storage (not tied to specific date)
+            const sharedNotes = scheduleData.sharedNotes || '';
+            html += `<div class="permanent-notes-section">
+                <div class="notes-label">📝 Общие заметки (синхронизированы во всех днях):</div>
+                <textarea class="notes-input"
+                    placeholder="Введите важные заметки, они будут видны во всех днях..."
+                    onchange="updateSharedNotes(this.value)"
+                    onfocus="this.select()">${sharedNotes}</textarea>
+            </div>`;
 
             container.innerHTML = html;
         }
@@ -1088,20 +1085,15 @@
             logActivity(`${currentUser} ${action} ${time} для стола ${table}`);
         }
 
-        function updatePermanentNotes(value) {
-            const dates = getNextThreeDates();
-            const dateKey = dates[0].key; // Always save to first day (today)
-
-            if (!scheduleData[dateKey]) {
-                scheduleData[dateKey] = { tables: [], slots: {} };
-            }
-
-            scheduleData[dateKey].permanentNotes = value;
+        // Update shared notes (synced across all days)
+        function updateSharedNotes(value) {
+            // Save to global shared notes storage (not tied to any specific date)
+            scheduleData.sharedNotes = value;
             saveToLocalStorage();
             saveToServer();
 
             const action = value ? 'обновил' : 'очистил';
-            logActivity(`${currentUser} ${action} постоянные заметки`);
+            logActivity(`${currentUser} ${action} общие заметки`);
         }
 
         function showAddDialog() {
