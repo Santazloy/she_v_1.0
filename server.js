@@ -3,6 +3,7 @@ const cors = require('cors');
 const fs = require('fs').promises;
 const fsSync = require('fs');
 const path = require('path');
+const cron = require('node-cron');
 const { createClient } = require('@supabase/supabase-js');
 require('dotenv').config();
 
@@ -362,11 +363,25 @@ app.use(express.static('.'));
 async function startServer() {
     await initDirectories();
 
+    // Schedule automatic daily reset at 4:00 AM Shanghai time
+    cron.schedule('0 4 * * *', async () => {
+        try {
+            console.log('🕐 Automatic daily reset triggered at 4:00 AM Shanghai time');
+            await archiveAndResetSchedule();
+            console.log('✅ Automatic daily reset completed successfully');
+        } catch (error) {
+            console.error('❌ Automatic daily reset failed:', error.message);
+        }
+    }, {
+        timezone: 'Asia/Shanghai'
+    });
+
     app.listen(PORT, '0.0.0.0', () => {
         console.log(`Server running on port ${PORT}`);
         console.log('✅ Telegram bot disabled');
         console.log('✅ Screenshot feature disabled');
-        console.log('⚠️  Manual reset only - use the reset button');
+        console.log('✅ Automatic daily reset at 4:00 AM Shanghai time');
+        console.log('✅ Manual reset button available');
     });
 }
 
