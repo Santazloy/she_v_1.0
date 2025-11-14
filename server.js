@@ -195,16 +195,6 @@ app.post('/api/activity', async (req, res) => {
     }
 });
 
-// Manual trigger for daily reset
-app.post('/api/manual-reset', async (req, res) => {
-    try {
-        console.log('Manual reset triggered');
-        await archiveAndResetSchedule();
-        res.json({ success: true, message: 'Reset completed' });
-    } catch (error) {
-        res.status(500).json({ success: false, error: error.message });
-    }
-});
 
 // Get next three dates helper
 function getNextThreeDates() {
@@ -392,7 +382,7 @@ async function startServer() {
         console.log('✅ Telegram bot disabled');
         console.log('✅ Screenshot feature disabled');
         console.log('✅ Automatic daily reset at 4:00 AM Shanghai time');
-        console.log('✅ Manual reset button available');
+        console.log('✅ Manual reset removed (automatic only)');
     });
 }
 
