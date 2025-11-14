@@ -138,6 +138,13 @@ async function writeScheduleData(data) {
 app.get('/api/schedule', async (req, res) => {
     try {
         const data = await readScheduleData();
+
+        // Ensure activeDates is set (important for preventing automatic date shifts)
+        if (!data.activeDates) {
+            data.activeDates = getNextThreeDates();
+            await writeScheduleData(data);
+        }
+
         res.json(data);
     } catch (error) {
         res.status(500).json({ error: 'Failed to read schedule data' });
@@ -321,6 +328,10 @@ async function archiveAndResetSchedule() {
 
             console.log(`Transferred ${Object.keys(addressesToPreserve).length} addresses to new first day: ${tomorrowKey}`);
         }
+
+        // Update active dates (CRITICAL: prevents UI from auto-shifting at midnight)
+        data.activeDates = getNextThreeDates();
+        console.log('Updated active dates:', data.activeDates.map(d => d.display).join(', '));
 
         // Save updated data
         await writeScheduleData(data);

@@ -660,6 +660,7 @@
         let currentDate = 0;
         let scheduleData = {};
         let activityLog = [];
+        let activeDates = []; // CRITICAL: Fixed dates from server (prevents midnight auto-shift)
 
         // Initialize
         document.addEventListener('DOMContentLoaded', () => {
@@ -863,6 +864,12 @@
                     if (data.scheduleData && Object.keys(data.scheduleData).length > 0) {
                         scheduleData = data.scheduleData;
                         activityLog = data.activityLog || [];
+
+                        // CRITICAL: Use fixed dates from server (prevents midnight auto-shift)
+                        activeDates = data.activeDates || getNextThreeDates();
+                        console.log('📅 Active dates from server:', activeDates.map(d => d.display).join(', '));
+
+                        updateDateDisplay();
                         renderSchedule();
                         updateLogDisplay();
                     } else {
@@ -877,6 +884,7 @@
                 const saved = localStorage.getItem('scheduleData');
                 if (saved) {
                     scheduleData = JSON.parse(saved);
+                    activeDates = getNextThreeDates(); // Fallback to calculated dates
                     renderSchedule();
                 } else {
                     loadDemoData();
