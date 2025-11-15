@@ -156,6 +156,12 @@ function getNextThreeDates() {
     const dates = [];
     const now = new Date(new Date().toLocaleString('en-US', { timeZone: 'Asia/Shanghai' }));
 
+    // CRITICAL: Day changes at 4:00 AM, not midnight!
+    // If it's before 4:00 AM, we're still in "yesterday"
+    if (now.getHours() < 4) {
+        now.setDate(now.getDate() - 1);
+    }
+
     for (let i = 0; i < 3; i++) {
         const date = new Date(now);
         date.setDate(date.getDate() + i);
