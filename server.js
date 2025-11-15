@@ -186,8 +186,14 @@ async function archiveAndResetSchedule() {
         // Get current schedule data
         const data = await readScheduleData();
 
-        // Get current dates
+        // Get current dates with 4:00 AM day boundary
         const now = new Date(new Date().toLocaleString('en-US', { timeZone: 'Asia/Shanghai' }));
+
+        // CRITICAL: Day changes at 4:00 AM, not midnight!
+        // If it's before 4:00 AM, we're still in "yesterday"
+        if (now.getHours() < 4) {
+            now.setDate(now.getDate() - 1);
+        }
 
         // Get today's key (which will become yesterday after reset)
         const todayKey = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
