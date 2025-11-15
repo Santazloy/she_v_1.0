@@ -33,7 +33,7 @@ async function readScheduleData() {
     console.log('[Supabase] Reading from schedule_data...');
     const { data, error } = await supabase
         .from('schedule_data')
-        .select('schedule_data, activity_log, active_dates')
+        .select('schedule_data, activity_log')
         .eq('data_key', 'main')
         .single();
 
@@ -72,8 +72,7 @@ async function writeScheduleData(data) {
         .upsert({
             data_key: 'main',
             schedule_data: data.scheduleData || {},
-            activity_log: data.activityLog || [],
-            active_dates: data.activeDates || null
+            activity_log: data.activityLog || []
         }, {
             onConflict: 'data_key'
         });
