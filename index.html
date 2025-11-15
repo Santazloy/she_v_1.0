@@ -801,7 +801,8 @@
         }
 
         function updateDateDisplay() {
-            const dates = getNextThreeDates();
+            // Use fixed dates from server (prevents midnight auto-shift)
+            const dates = activeDates.length > 0 ? activeDates : getNextThreeDates();
             document.getElementById('tab0').textContent = dates[0].display;
             document.getElementById('tab1').textContent = dates[1].display;
             document.getElementById('tab2').textContent = dates[2].display;
@@ -831,7 +832,8 @@
                 return;
             }
 
-            const dates = getNextThreeDates();
+            // Use fixed dates from server (prevents midnight auto-shift)
+            const dates = activeDates.length > 0 ? activeDates : getNextThreeDates();
             const dateKey = dates[currentDate].key;
 
             // Ensure data exists for current date
@@ -912,7 +914,8 @@
         }
 
         function updateAddress(table, value) {
-            const dates = getNextThreeDates();
+            // Use fixed dates from server (prevents midnight auto-shift)
+            const dates = activeDates.length > 0 ? activeDates : getNextThreeDates();
             const dateKey = dates[currentDate].key;
 
             if (!scheduleData[dateKey].slots) {
@@ -928,7 +931,8 @@
         }
 
         function updateSlot(table, time, value) {
-            const dates = getNextThreeDates();
+            // Use fixed dates from server (prevents midnight auto-shift)
+            const dates = activeDates.length > 0 ? activeDates : getNextThreeDates();
             const dateKey = dates[currentDate].key;
 
             if (!scheduleData[dateKey].slots) {
@@ -956,7 +960,8 @@
         }
 
         function showAddDialog() {
-            const dates = getNextThreeDates();
+            // Use fixed dates from server (prevents midnight auto-shift)
+            const dates = activeDates.length > 0 ? activeDates : getNextThreeDates();
             const dateKey = dates[currentDate].key;
 
             // Ensure data exists
@@ -989,7 +994,8 @@
         }
 
         function addTable(tableNum) {
-            const dates = getNextThreeDates();
+            // Use fixed dates from server (prevents midnight auto-shift)
+            const dates = activeDates.length > 0 ? activeDates : getNextThreeDates();
             const dateKey = dates[currentDate].key;
 
             if (!scheduleData[dateKey].tables) {
@@ -1054,7 +1060,8 @@
 
         // Delete dialog functions
         function showDeleteDialog() {
-            const dates = getNextThreeDates();
+            // Use fixed dates from server (prevents midnight auto-shift)
+            const dates = activeDates.length > 0 ? activeDates : getNextThreeDates();
             const dateKey = dates[currentDate].key;
 
             // Ensure data exists
@@ -1085,7 +1092,8 @@
         }
 
         function deleteTable(tableNum) {
-            const dates = getNextThreeDates();
+            // Use fixed dates from server (prevents midnight auto-shift)
+            const dates = activeDates.length > 0 ? activeDates : getNextThreeDates();
             const dateKey = dates[currentDate].key;
             
             if (confirm(`Удалить столбец ${tableNum}?`)) {
