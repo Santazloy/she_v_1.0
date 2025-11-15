@@ -631,6 +631,13 @@
             ? 'http://localhost:3000'
             : window.location.origin;
 
+        // Security: HTML escaping to prevent XSS
+        function escapeHtml(text) {
+            const div = document.createElement('div');
+            div.textContent = text;
+            return div.innerHTML;
+        }
+
         // State
         let currentUser = null;
         let currentDate = 0;
@@ -873,12 +880,12 @@
             html += '<div class="schedule-row address-row">';
             html += '<div class="schedule-cell time-cell"></div>';
             tables.forEach(table => {
-                const address = currentData.slots?.[table]?.address || '';
+                const address = escapeHtml(currentData.slots?.[table]?.address || '');
                 html += `<div class="schedule-cell data-cell">
-                    <input type="text" class="address-input" 
-                        placeholder="地址" 
+                    <input type="text" class="address-input"
+                        placeholder="地址"
                         value="${address}"
-                        onchange="updateAddress('${table}', this.value)">
+                        onchange="updateAddress('${escapeHtml(table)}', this.value)">
                 </div>`;
             });
             html += '</div>';
@@ -891,11 +898,12 @@
                 tables.forEach(table => {
                     const value = currentData.slots?.[table]?.[time] || '';
                     const isSpecial = value.includes('❌') || value.includes('⚽') || value.includes('✓');
+                    const escapedValue = escapeHtml(value);
 
                     html += `<div class="schedule-cell data-cell">
                         <input type="text" class="cell-input ${isSpecial ? 'with-icon' : ''}"
-                            value="${value}"
-                            onchange="updateSlot('${table}', '${time}', this.value)"
+                            value="${escapedValue}"
+                            onchange="updateSlot('${escapeHtml(table)}', '${escapeHtml(time)}', this.value)"
                             onfocus="this.select()">
                     </div>`;
                 });
@@ -907,7 +915,7 @@
 
             // Add shared notes section (visible in ALL days, synced across all days)
             // Get notes from global shared storage (not tied to specific date)
-            const sharedNotes = scheduleData.sharedNotes || '';
+            const sharedNotes = escapeHtml(scheduleData.sharedNotes || '');
             html += `<div class="permanent-notes-section">
                 <div class="notes-label">📝 Общие заметки (синхронизированы во всех днях):</div>
                 <textarea class="notes-input"
@@ -1055,8 +1063,8 @@
 
         function updateLogDisplay() {
             const logContainer = document.getElementById('activityLog');
-            logContainer.innerHTML = activityLog.map(entry => 
-                `<div class="log-entry"><span class="time">[${entry.time}]</span> ${entry.message}</div>`
+            logContainer.innerHTML = activityLog.map(entry =>
+                `<div class="log-entry"><span class="time">[${escapeHtml(entry.time)}]</span> ${escapeHtml(entry.message)}</div>`
             ).join('');
         }
 

@@ -44,10 +44,14 @@ Free tier засыпает после 15 минут неактивности.
 ### Environment Variables в Render
 Убедитесь что добавлены:
 ```
-TELEGRAM_BOT_TOKEN = 7248913086:AAHnu8f8bQfrOCWkwlkmnmjqs2JdTv2BHGU
-TELEGRAM_CHAT_ID = -1003244054167
+TELEGRAM_BOT_TOKEN = your_actual_bot_token_here
+TELEGRAM_CHAT_ID = your_actual_chat_id_here
+SUPABASE_URL = your_supabase_url_here
+SUPABASE_ANON_KEY = your_supabase_anon_key_here
 NODE_ENV = production
 ```
+
+⚠️ **ВАЖНО:** Никогда не коммитьте реальные токены в Git!
 
 ### Build Command
 ```bash

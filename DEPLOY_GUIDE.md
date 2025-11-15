@@ -58,8 +58,8 @@ git push -u origin main
 
 **Environment Variables:**
 Добавьте следующие переменные:
-- Key: `TELEGRAM_BOT_TOKEN`, Value: `7248913086:AAHnu8f8bQfrOCWkwlkmnmjqs2JdTv2BHGU`
-- Key: `TELEGRAM_CHAT_ID`, Value: `-1003244054167`
+- Key: `TELEGRAM_BOT_TOKEN`, Value: `YOUR_BOT_TOKEN_HERE`
+- Key: `TELEGRAM_CHAT_ID`, Value: `YOUR_CHAT_ID_HERE`
 - Key: `NODE_ENV`, Value: `production`
 
 4. Нажмите "Create Web Service"

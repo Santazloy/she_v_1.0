@@ -135,8 +135,8 @@ URL: https://she-v-1-0.onrender.com
 
 ### Telegram (в переменных окружения Render)
 ```
-TELEGRAM_BOT_TOKEN = 7248913086:AAHnu8f8bQfrOCWkwlkmnmjqs2JdTv2BHGU
-TELEGRAM_CHAT_ID = -1003244054167
+TELEGRAM_BOT_TOKEN = YOUR_BOT_TOKEN_HERE
+TELEGRAM_CHAT_ID = YOUR_CHAT_ID_HERE
 NODE_ENV = production
 ```
 

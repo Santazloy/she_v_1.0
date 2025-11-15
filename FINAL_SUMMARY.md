@@ -112,8 +112,8 @@ git log --oneline -1
    |-----|-------|
    | `NODE_ENV` | `production` |
    | `PORT` | `10000` |
-   | `TELEGRAM_BOT_TOKEN` | `7248913086:AAHnu8f8bQfrOCWkwlkmnmjqs2JdTv2BHGU` |
-   | `TELEGRAM_CHAT_ID` | `-1003244054167` |
+   | `TELEGRAM_BOT_TOKEN` | `YOUR_BOT_TOKEN_HERE` |
+   | `TELEGRAM_CHAT_ID` | `YOUR_CHAT_ID_HERE` |
    | `PUPPETEER_SKIP_CHROMIUM_DOWNLOAD` | `true` |
 
 5. **Создайте сервис:**
@@ -229,8 +229,8 @@ npm install
 ```bash
 # Создать .env файл
 cat > .env << EOF
-TELEGRAM_BOT_TOKEN=7248913086:AAHnu8f8bQfrOCWkwlkmnmjqs2JdTv2BHGU
-TELEGRAM_CHAT_ID=-1003244054167
+TELEGRAM_BOT_TOKEN=YOUR_BOT_TOKEN_HERE
+TELEGRAM_CHAT_ID=YOUR_CHAT_ID_HERE
 NODE_ENV=development
 PORT=3000
 EOF

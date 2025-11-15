@@ -48,8 +48,8 @@ npm install
 
 ```env
 # Telegram Bot Configuration
-TELEGRAM_BOT_TOKEN=7248913086:AAHnu8f8bQfrOCWkwlkmnmjqs2JdTv2BHGU
-TELEGRAM_CHAT_ID=-1003244054167
+TELEGRAM_BOT_TOKEN=YOUR_BOT_TOKEN_HERE
+TELEGRAM_CHAT_ID=YOUR_CHAT_ID_HERE
 
 # Server Configuration
 NODE_ENV=development
@@ -107,8 +107,8 @@ npm start
 |-----|-------|
 | `NODE_ENV` | `production` |
 | `PORT` | `10000` |
-| `TELEGRAM_BOT_TOKEN` | `7248913086:AAHnu8f8bQfrOCWkwlkmnmjqs2JdTv2BHGU` |
-| `TELEGRAM_CHAT_ID` | `-1003244054167` |
+| `TELEGRAM_BOT_TOKEN` | `YOUR_BOT_TOKEN_HERE` |
+| `TELEGRAM_CHAT_ID` | `YOUR_CHAT_ID_HERE` |
 | `PUPPETEER_SKIP_CHROMIUM_DOWNLOAD` | `true` |
 
 ### Шаг 4: Деплой
