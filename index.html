@@ -641,7 +641,6 @@
         // Initialize
         document.addEventListener('DOMContentLoaded', () => {
             checkSavedLogin();
-            initializeData();
             startClock();
             loadFromServer();
 
@@ -653,116 +652,6 @@
             // Start auto-refresh
             startAutoRefresh();
         });
-
-        function initializeData() {
-            const dates = getNextThreeDates();
-            dates.forEach(date => {
-                if (!scheduleData[date.key]) {
-                    scheduleData[date.key] = {
-                        tables: []
-                    };
-                }
-            });
-        }
-
-        function loadDemoData() {
-            const dates = getNextThreeDates();
-            
-            // Demo data for first day
-            scheduleData[dates[0].key] = {
-                tables: ['111', '333', '555']
-            };
-            
-            // Set demo slot data
-            if (!scheduleData[dates[0].key].slots) {
-                scheduleData[dates[0].key].slots = {};
-            }
-            
-            // Table 111 data
-            scheduleData[dates[0].key].slots['111'] = {
-                address: '新闻路与长沙路交汇处 (新闻路126号)',
-                '12:00': '✓',
-                '13:00': '',
-                '14:00': '',
-                '15:00': '',
-                '16:00': '',
-                '17:00': '',
-                '18:00': '',
-                '19:00': '',
-                '20:00': '⚽',
-                '21:00': '',
-                '22:00': '',
-                '23:00': '',
-                '00:00': '',
-                '01:00': '⚽',
-                '02:00': ''
-            };
-            
-            // Table 333 data
-            scheduleData[dates[0].key].slots['333'] = {
-                address: '距鹿路242號',
-                '12:00': '',
-                '13:00': '',
-                '14:00': '',
-                '15:00': '',
-                '16:00': '',
-                '17:00': '',
-                '18:00': '⚽',
-                '19:00': '',
-                '20:00': '',
-                '21:00': '',
-                '22:00': '',
-                '23:00': '',
-                '00:00': '',
-                '01:00': '',
-                '02:00': ''
-            };
-            
-            // Table 555 data
-            scheduleData[dates[0].key].slots['555'] = {
-                address: '麗園路708號',
-                '12:00': '',
-                '13:00': '',
-                '14:00': '',
-                '15:00': '',
-                '16:00': '',
-                '17:00': '',
-                '18:00': '',
-                '19:00': '7:30 🕐',
-                '20:00': '',
-                '21:00': '',
-                '22:00': '',
-                '23:00': '',
-                '00:00': '',
-                '01:00': '',
-                '02:00': ''
-            };
-
-            // Second day - one table
-            scheduleData[dates[1].key] = {
-                tables: ['111'],
-                slots: {
-                    '111': {
-                        address: '',
-                        '12:00': '❌',
-                        '13:00': '',
-                        '14:00': '',
-                        '15:00': '',
-                        '16:00': '',
-                        '17:00': '',
-                        '18:00': '',
-                        '19:00': '',
-                        '20:00': '',
-                        '21:00': '',
-                        '22:00': '',
-                        '23:00': '',
-                        '00:00': '',
-                        '01:00': '',
-                        '02:00': ''
-                    }
-                }
-            };
-        }
 
         function getNextThreeDates() {
             const dates = [];
@@ -831,40 +720,32 @@
             }
         }
 
-        // Load data from server
+        // Load data from server (NO demo data, NO localStorage fallback)
         async function loadFromServer() {
             try {
                 const response = await fetch(`${API_BASE}/api/schedule`);
-                if (response.ok) {
-                    const data = await response.json();
-                    if (data.scheduleData && Object.keys(data.scheduleData).length > 0) {
-                        scheduleData = data.scheduleData;
-                        activityLog = data.activityLog || [];
-
-                        // CRITICAL: Use fixed dates from server (prevents midnight auto-shift)
-                        activeDates = data.activeDates || getNextThreeDates();
-                        console.log('📅 Active dates from server:', activeDates.map(d => d.display).join(', '));
-
-                        updateDateDisplay();
-                        renderSchedule();
-                        updateLogDisplay();
-                    } else {
-                        // Load demo data if server has no data
-                        loadDemoData();
-                        saveToServer();
-                    }
+                if (!response.ok) {
+                    throw new Error(`Server returned ${response.status}`);
                 }
+
+                const data = await response.json();
+
+                // Always use server data (even if empty)
+                scheduleData = data.scheduleData || {};
+                activityLog = data.activityLog || [];
+
+                // CRITICAL: Use fixed dates from server (prevents midnight auto-shift)
+                activeDates = data.activeDates || getNextThreeDates();
+                console.log('📅 Active dates from server:', activeDates.map(d => d.display).join(', '));
+
+                updateDateDisplay();
+                renderSchedule();
+                updateLogDisplay();
+
             } catch (error) {
-                console.error('Failed to load from server:', error);
-                // Try loading from localStorage as fallback
-                const saved = localStorage.getItem('scheduleData');
-                if (saved) {
-                    scheduleData = JSON.parse(saved);
-                    activeDates = getNextThreeDates(); // Fallback to calculated dates
-                    renderSchedule();
-                } else {
-                    loadDemoData();
-                }
+                console.error('❌ Failed to load from server:', error);
+                console.error('This is FATAL - cannot work without server!');
+                alert('⚠️ Не удалось подключиться к серверу!\n⚠️ 无法连接到服务器!');
             }
         }
 
@@ -908,9 +789,6 @@
                             console.log('📥 Syncing data from server');
                             scheduleData = data.scheduleData;
                             activityLog = data.activityLog || [];
-
-                            // Also update localStorage to keep in sync
-                            saveToLocalStorage();
 
                             renderSchedule();
                             updateLogDisplay();
@@ -1045,7 +923,6 @@
             }
 
             scheduleData[dateKey].slots[table].address = value;
-            saveToLocalStorage();
             saveToServer();
             logActivity(`${currentUser} обновил адрес стола ${table}`);
         }
@@ -1062,7 +939,6 @@
             }
 
             scheduleData[dateKey].slots[table][time] = value;
-            saveToLocalStorage();
             saveToServer();
 
             const action = value ? 'записал' : 'очистил';
@@ -1073,7 +949,6 @@
         function updateSharedNotes(value) {
             // Save to global shared notes storage (not tied to any specific date)
             scheduleData.sharedNotes = value;
-            saveToLocalStorage();
             saveToServer();
 
             const action = value ? 'обновил' : 'очистил';
@@ -1125,7 +1000,6 @@
                 scheduleData[dateKey].tables.push(tableNum);
                 scheduleData[dateKey].tables.sort((a, b) => parseInt(a) - parseInt(b));
 
-                saveToLocalStorage();
                 saveToServer();
                 renderSchedule();
                 logActivity(`${currentUser} добавил стол ${tableNum}`);
@@ -1135,15 +1009,9 @@
         }
 
         function saveData() {
-            saveToLocalStorage();
             saveToServer();
             alert('✅ Данные сохранены');
             logActivity(`${currentUser} сохранил данные`);
-        }
-
-        function saveToLocalStorage() {
-            localStorage.setItem('scheduleData', JSON.stringify(scheduleData));
-            localStorage.setItem('activityLog', JSON.stringify(activityLog));
         }
 
         function toggleLog() {
@@ -1228,8 +1096,7 @@
                     if (scheduleData[dateKey].slots && scheduleData[dateKey].slots[tableNum]) {
                         delete scheduleData[dateKey].slots[tableNum];
                     }
-                    
-                    saveToLocalStorage();
+
                     saveToServer();
                     renderSchedule();
                     logActivity(`${currentUser} удалил стол ${tableNum}`);

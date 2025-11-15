@@ -1,8 +1,5 @@
 const express = require('express');
 const cors = require('cors');
-const fs = require('fs').promises;
-const fsSync = require('fs');
-const path = require('path');
 const cron = require('node-cron');
 const { createClient } = require('@supabase/supabase-js');
 require('dotenv').config();
@@ -10,126 +7,84 @@ require('dotenv').config();
 const app = express();
 const PORT = process.env.PORT || 3000;
 
-// Supabase configuration
+// Supabase configuration (REQUIRED - no fallback!)
 const SUPABASE_URL = process.env.SUPABASE_URL;
 const SUPABASE_KEY = process.env.SUPABASE_ANON_KEY;
-let supabase = null;
 
-// Initialize Supabase client
-if (SUPABASE_URL && SUPABASE_KEY) {
-    supabase = createClient(SUPABASE_URL, SUPABASE_KEY);
-    console.log('Supabase client initialized');
-} else {
-    console.log('Supabase credentials not provided, using file storage');
+if (!SUPABASE_URL || !SUPABASE_KEY) {
+    console.error('❌ FATAL: Supabase credentials not configured!');
+    console.error('Set SUPABASE_URL and SUPABASE_ANON_KEY in .env file');
+    process.exit(1);
 }
+
+const supabase = createClient(SUPABASE_URL, SUPABASE_KEY);
+console.log('✅ Supabase client initialized');
 
 // Middleware
 app.use(cors());
 app.use(express.json({ limit: '50mb' }));
 
-// Data directory setup
-const DATA_DIR = path.join(__dirname, 'data');
-
-// Initialize directories
-async function initDirectories() {
-    try {
-        await fs.mkdir(DATA_DIR, { recursive: true });
-        console.log('Directories initialized');
-    } catch (error) {
-        console.error('Error creating directories:', error);
-    }
-}
-
-// Get schedule data file path
-function getDataFilePath() {
-    return path.join(DATA_DIR, 'schedule.json');
-}
-
-// Read schedule data
+// Read schedule data (ONLY Supabase - NO fallback!)
 async function readScheduleData() {
-    // Try Supabase first
-    if (supabase) {
-        try {
-            console.log('[Supabase] Attempting to read from schedule_data...');
-            const { data, error } = await supabase
-                .from('schedule_data')
-                .select('schedule_data, activity_log')
-                .eq('data_key', 'main')
-                .single();
+    if (!supabase) {
+        throw new Error('Supabase not configured');
+    }
 
-            if (error) {
-                console.error('[Supabase] Read error:', {
-                    message: error.message,
-                    details: error.details,
-                    hint: error.hint,
-                    code: error.code
-                });
-                throw error;
-            }
+    console.log('[Supabase] Reading from schedule_data...');
+    const { data, error } = await supabase
+        .from('schedule_data')
+        .select('schedule_data, activity_log, active_dates')
+        .eq('data_key', 'main')
+        .single();
 
-            console.log('[Supabase] ✅ Read successful');
+    if (error) {
+        // If record doesn't exist (PGRST116), return empty data
+        if (error.code === 'PGRST116') {
+            console.log('[Supabase] No data found - returning empty structure');
             return {
-                scheduleData: data?.schedule_data || {},
-                activityLog: data?.activity_log || []
+                scheduleData: {},
+                activityLog: [],
+                activeDates: null
             };
-        } catch (error) {
-            console.error('[Supabase] Failed to read, falling back to file:', {
-                message: error.message,
-                cause: error.cause,
-                stack: error.stack?.split('\n')[0]
-            });
         }
+
+        // Any other error - throw it!
+        console.error('[Supabase] ❌ Read error:', error.message);
+        throw new Error(`Supabase read failed: ${error.message}`);
     }
 
-    // Fallback to file storage
-    try {
-        const data = await fs.readFile(getDataFilePath(), 'utf8');
-        return JSON.parse(data);
-    } catch (error) {
-        // Return empty structure if file doesn't exist
-        return {
-            scheduleData: {},
-            activityLog: []
-        };
-    }
+    console.log('[Supabase] ✅ Read successful');
+    return {
+        scheduleData: data?.schedule_data || {},
+        activityLog: data?.activity_log || [],
+        activeDates: data?.active_dates || null
+    };
 }
 
-// Write schedule data
+// Write schedule data (ONLY Supabase - NO fallback!)
 async function writeScheduleData(data) {
-    // Try Supabase first
-    if (supabase) {
-        try {
-            const { error } = await supabase
-                .from('schedule_data')
-                .upsert({
-                    data_key: 'main',
-                    schedule_data: data.scheduleData || {},
-                    activity_log: data.activityLog || []
-                }, {
-                    onConflict: 'data_key'
-                });
-
-            if (error) {
-                console.error('Supabase write error:', error.message);
-                throw error;
-            }
-
-            console.log('✅ Data saved to Supabase');
-            return true;
-        } catch (error) {
-            console.error('Failed to write to Supabase, falling back to file:', error.message);
-        }
+    if (!supabase) {
+        throw new Error('Supabase not configured');
     }
 
-    // Fallback to file storage
-    try {
-        await fs.writeFile(getDataFilePath(), JSON.stringify(data, null, 2), 'utf8');
-        console.log('✅ Data saved to file');
-        return true;
-    } catch (error) {
-        console.error('Error writing schedule data:', error);
-        return false;
+    const { error } = await supabase
+        .from('schedule_data')
+        .upsert({
+            data_key: 'main',
+            schedule_data: data.scheduleData || {},
+            activity_log: data.activityLog || [],
+            active_dates: data.activeDates || null
+        }, {
+            onConflict: 'data_key'
+        });
+
+    if (error) {
+        console.error('[Supabase] ❌ Write error:', error.message);
+        throw new Error(`Supabase write failed: ${error.message}`);
     }
+
+    console.log('[Supabase] ✅ Data saved successfully');
+    return true;
 }
 
 // API Routes
@@ -362,8 +317,6 @@ app.use(express.static('.'));
 
 // Start server
 async function startServer() {
-    await initDirectories();
-
     // Schedule automatic daily reset at 4:00 AM Shanghai time
     cron.schedule('0 4 * * *', async () => {
         try {
@@ -383,6 +336,7 @@ async function startServer() {
         console.log('✅ Screenshot feature disabled');
         console.log('✅ Automatic daily reset at 4:00 AM Shanghai time');
         console.log('✅ Manual reset removed (automatic only)');
+        console.log('✅ NO file storage fallback - Supabase ONLY!');
     });
 }
 
