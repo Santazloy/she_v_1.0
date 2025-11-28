@@ -589,6 +589,8 @@
                 <div class="table-option" onclick="addTable('555')">555</div>
                 <div class="table-option" onclick="addTable('666')">666</div>
                 <div class="table-option" onclick="addTable('888')">888</div>
+                <div class="table-option" onclick="addTable('北京1')">北京1</div>
+                <div class="table-option" onclick="addTable('北京2')">北京2</div>
             </div>
             <button class="close-dialog" onclick="hideAddDialog()">取消</button>
         </div>
@@ -1018,7 +1020,18 @@
 
             if (!scheduleData[dateKey].tables.includes(tableNum)) {
                 scheduleData[dateKey].tables.push(tableNum);
-                scheduleData[dateKey].tables.sort((a, b) => parseInt(a) - parseInt(b));
+                // Sort: numeric tables first (111, 222...), then Chinese tables (北京1, 北京2...)
+                scheduleData[dateKey].tables.sort((a, b) => {
+                    const aNum = parseInt(a);
+                    const bNum = parseInt(b);
+                    const aIsNum = !isNaN(aNum);
+                    const bIsNum = !isNaN(bNum);
+
+                    if (aIsNum && bIsNum) return aNum - bNum;
+                    if (aIsNum && !bIsNum) return -1;
+                    if (!aIsNum && bIsNum) return 1;
+                    return a.localeCompare(b, 'zh-CN');
+                });
 
                 saveToServer();
                 renderSchedule();
