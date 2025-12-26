@@ -781,7 +781,8 @@
                     },
                     body: JSON.stringify({
                         scheduleData,
-                        activityLog
+                        activityLog,
+                        user: currentUser  // Include current user for Telegram notifications
                     })
                 });
 

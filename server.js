@@ -2,6 +2,7 @@ const express = require('express');
 const cors = require('cors');
 const cron = require('node-cron');
 const { createClient } = require('@supabase/supabase-js');
+const TelegramBot = require('node-telegram-bot-api');
 require('dotenv').config();
 
 const app = express();
@@ -19,6 +20,27 @@ if (!SUPABASE_URL || !SUPABASE_KEY) {
 
 const supabase = createClient(SUPABASE_URL, SUPABASE_KEY);
 console.log('✅ Supabase client initialized');
+
+// Telegram bot configuration
+const TELEGRAM_BOT_TOKEN = process.env.TELEGRAM_BOT_TOKEN || '7780834477:AAHLcpVOWOQNn1DkGMneZGm2D-GQTbk-uCk';
+const bot = new TelegramBot(TELEGRAM_BOT_TOKEN, { polling: false });
+
+// Telegram chat IDs for each table
+const TELEGRAM_CHAT_IDS = {
+    '000': '-1003456380758',
+    '111': '-1002168406968',
+    '222': '-1002433229203',
+    '333': '-1002406184936',
+    '555': '-1002342166200',
+    '666': '-1002315659294',
+    '888': '-1002250158149',
+    '999': '-1003362558902',
+    '北京1': '-1003591371312',
+    '北京2': '-1003493686928',
+    '⚽️': '-1002468561827'
+};
+
+console.log('✅ Telegram bot configured');
 
 // Middleware
 app.use(cors());
@@ -87,6 +109,143 @@ async function writeScheduleData(data) {
     return true;
 }
 
+// Helper function to send Telegram notifications
+async function sendTelegramNotification(chatId, message) {
+    try {
+        await bot.sendMessage(chatId, message, { parse_mode: 'HTML' });
+        console.log(`✅ Telegram notification sent to ${chatId}`);
+    } catch (error) {
+        console.error(`❌ Failed to send Telegram notification to ${chatId}:`, error.message);
+    }
+}
+
+// Helper function to detect changes between old and new schedule data
+function detectScheduleChanges(oldData, newData, user) {
+    const changes = [];
+    
+    // Get all unique date keys from both old and new data
+    const allDates = new Set([
+        ...Object.keys(oldData || {}).filter(key => key !== 'sharedNotes'),
+        ...Object.keys(newData || {}).filter(key => key !== 'sharedNotes')
+    ]);
+    
+    allDates.forEach(dateKey => {
+        const oldDateData = oldData?.[dateKey] || { tables: [], slots: {} };
+        const newDateData = newData?.[dateKey] || { tables: [], slots: {} };
+        
+        // Get all unique tables from both old and new data
+        const allTables = new Set([
+            ...(oldDateData.tables || []),
+            ...(newDateData.tables || [])
+        ]);
+        
+        allTables.forEach(table => {
+            const oldSlots = oldDateData.slots?.[table] || {};
+            const newSlots = newDateData.slots?.[table] || {};
+            
+            // Get all time slots (excluding 'address')
+            const allTimeSlots = new Set([
+                ...Object.keys(oldSlots).filter(key => key !== 'address'),
+                ...Object.keys(newSlots).filter(key => key !== 'address')
+            ]);
+            
+            allTimeSlots.forEach(timeSlot => {
+                const oldValue = oldSlots[timeSlot];
+                const newValue = newSlots[timeSlot];
+                
+                if (oldValue !== newValue) {
+                    // Parse date for display
+                    const [year, month, day] = dateKey.split('-');
+                    const displayDate = `${parseInt(day)}.${parseInt(month)}`;
+                    
+                    if (!oldValue && newValue) {
+                        // New entry added
+                        changes.push({
+                            type: 'add',
+                            table,
+                            date: displayDate,
+                            time: timeSlot,
+                            newValue,
+                            user
+                        });
+                    } else if (oldValue && !newValue) {
+                        // Entry deleted
+                        changes.push({
+                            type: 'delete',
+                            table,
+                            date: displayDate,
+                            time: timeSlot,
+                            oldValue,
+                            user
+                        });
+                    } else if (oldValue && newValue) {
+                        // Entry modified
+                        changes.push({
+                            type: 'modify',
+                            table,
+                            date: displayDate,
+                            time: timeSlot,
+                            oldValue,
+                            newValue,
+                            user
+                        });
+                    }
+                }
+            });
+        });
+    });
+    
+    return changes;
+}
+
+// Process and send notifications for detected changes
+async function processScheduleChanges(changes) {
+    for (const change of changes) {
+        let message = '';
+        const userInfo = change.user ? ` (${change.user})` : '';
+        
+        switch (change.type) {
+            case 'add':
+                message = `📝 <b>Новая запись в ${change.table}</b>\n` +
+                         `📅 Дата: ${change.date}\n` +
+                         `⏰ Время: ${change.time}\n` +
+                         `📋 Запись: ${change.newValue}${userInfo}`;
+                break;
+                
+            case 'delete':
+                message = `🗑️ <b>Удалена запись в ${change.table}</b>\n` +
+                         `📅 Дата: ${change.date}\n` +
+                         `⏰ Время: ${change.time}\n` +
+                         `❌ Удалено: ${change.oldValue}${userInfo}`;
+                break;
+                
+            case 'modify':
+                message = `✏️ <b>Изменение в ${change.table}</b>\n` +
+                         `📅 Дата: ${change.date}\n` +
+                         `⏰ Время: ${change.time}\n` +
+                         `❌ Было: ${change.oldValue}\n` +
+                         `✅ Стало: ${change.newValue}${userInfo}`;
+                break;
+        }
+        
+        // Send to table-specific group
+        const tableChatId = TELEGRAM_CHAT_IDS[change.table];
+        if (tableChatId) {
+            await sendTelegramNotification(tableChatId, message);
+        }
+        
+        // Check if entry contains ⚽️ or 👄 emojis
+        const checkValue = change.newValue || change.oldValue || '';
+        if (checkValue.includes('⚽️') || checkValue.includes('👄')) {
+            // Also send to football group
+            const footballChatId = TELEGRAM_CHAT_IDS['⚽️'];
+            if (footballChatId && footballChatId !== tableChatId) {
+                await sendTelegramNotification(footballChatId, message);
+            }
+        }
+    }
+}
+
 // API Routes
 
 // Get all schedule data
@@ -109,6 +268,21 @@ app.get('/api/schedule', async (req, res) => {
 // Update schedule data
 app.post('/api/schedule', async (req, res) => {
     try {
+        // Get the current data before updating
+        const oldData = await readScheduleData();
+        const newScheduleData = req.body.scheduleData;
+        const user = req.body.user || 'unknown'; // Extract user from request
+        
+        // Detect changes between old and new schedule data
+        const changes = detectScheduleChanges(oldData.scheduleData, newScheduleData, user);
+        
+        // Process and send notifications for detected changes
+        if (changes.length > 0) {
+            console.log(`📬 Detected ${changes.length} schedule changes by ${user}`);
+            await processScheduleChanges(changes);
+        }
+        
+        // Write the updated data
         const success = await writeScheduleData(req.body);
         if (success) {
             res.json({ success: true });
@@ -116,6 +290,7 @@ app.post('/api/schedule', async (req, res) => {
             res.status(500).json({ error: 'Failed to save schedule data' });
         }
     } catch (error) {
+        console.error('Error in /api/schedule:', error);
         res.status(500).json({ error: 'Failed to save schedule data' });
     }
 });
@@ -344,7 +519,7 @@ async function startServer() {
 
     app.listen(PORT, '0.0.0.0', () => {
         console.log(`Server running on port ${PORT}`);
-        console.log('✅ Telegram bot disabled');
+        console.log('✅ Telegram notifications ENABLED for schedule changes');
         console.log('✅ Screenshot feature disabled');
         console.log('✅ Automatic daily reset at 4:00 AM Shanghai time');
         console.log('✅ Manual reset removed (automatic only)');
