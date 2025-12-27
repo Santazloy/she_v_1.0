@@ -198,33 +198,42 @@ function detectScheduleChanges(oldData, newData, user) {
     return changes;
 }
 
+// Helper function to check if string contains only emojis
+function isOnlyEmojis(str) {
+    // Remove all emojis and whitespace, check if anything remains
+    const emojiRegex = /[\u{1F600}-\u{1F64F}]|[\u{1F300}-\u{1F5FF}]|[\u{1F680}-\u{1F6FF}]|[\u{1F1E0}-\u{1F1FF}]|[\u{2600}-\u{26FF}]|[\u{2700}-\u{27BF}]|[\u{1F900}-\u{1F9FF}]|[\u{1F000}-\u{1F02F}]|[\u{1F0A0}-\u{1F0FF}]|[\u{1F100}-\u{1F64F}]|[\u{1F680}-\u{1F6FF}]|[\u{1F700}-\u{1F77F}]|[\u{1F780}-\u{1F7FF}]|[\u{1F800}-\u{1F8FF}]|[\u{1FA00}-\u{1FA6F}]|[\u{1FA70}-\u{1FAFF}]/gu;
+    const withoutEmojis = str.replace(emojiRegex, '').trim();
+    return str.length > 0 && withoutEmojis.length === 0;
+}
+
 // Process and send notifications for detected changes
 async function processScheduleChanges(changes) {
     for (const change of changes) {
+        // Skip if value contains only emojis
+        if (isOnlyEmojis(change.newValue || '') || isOnlyEmojis(change.oldValue || '')) {
+            console.log(`Skipping emoji-only change in ${change.table}`);
+            continue;
+        }
+        
         let message = '';
-        const userInfo = change.user ? ` (${change.user})` : '';
+        
+        // Extract actual booking value (time slot value, not the time column)
+        const bookingValue = change.newValue || change.oldValue || '';
         
         switch (change.type) {
             case 'add':
-                message = `📝 <b>Новая запись в ${change.table}</b>\n` +
-                         `📅 Дата: ${change.date}\n` +
-                         `⏰ Время: ${change.time}\n` +
-                         `📋 Запись: ${change.newValue}${userInfo}`;
+                message = `📝 <b>бронь/预订 ${change.table}</b>\n` +
+                         `📅 ${change.date} ⏰ ${bookingValue}`;
                 break;
                 
             case 'delete':
-                message = `🗑️ <b>Удалена запись в ${change.table}</b>\n` +
-                         `📅 Дата: ${change.date}\n` +
-                         `⏰ Время: ${change.time}\n` +
-                         `❌ Удалено: ${change.oldValue}${userInfo}`;
+                message = `🗑️ <b>отмена брони/消除 ${change.table}</b>\n` +
+                         `❌ ${change.date} ⏰ ${bookingValue}`;
                 break;
                 
             case 'modify':
-                message = `✏️ <b>Изменение в ${change.table}</b>\n` +
-                         `📅 Дата: ${change.date}\n` +
-                         `⏰ Время: ${change.time}\n` +
-                         `❌ Было: ${change.oldValue}\n` +
-                         `✅ Стало: ${change.newValue}${userInfo}`;
+                message = `✏️ <b>Изменение/改变 ${change.table}</b>\n` +
+                         `📅${change.date}  ⏰ ${change.oldValue}🔄 ${change.newValue}`;
                 break;
         }
         
