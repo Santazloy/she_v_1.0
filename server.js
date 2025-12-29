@@ -463,6 +463,11 @@ bot.on('message', async (msg) => {
         return;
     }
     
+    // Skip if no text (e.g., stickers, photos, etc.)
+    if (!text) {
+        return;
+    }
+    
     // Parse amount from message (format: +100 or -50)
     const match = text.match(/^([+-])(\d+(?:\.\d+)?)$/);
     if (match) {
