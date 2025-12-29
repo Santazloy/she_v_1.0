@@ -23,7 +23,7 @@ console.log('✅ Supabase client initialized');
 
 // Telegram bot configuration
 const TELEGRAM_BOT_TOKEN = process.env.TELEGRAM_BOT_TOKEN || '7780834477:AAHLcpVOWOQNn1DkGMneZGm2D-GQTbk-uCk';
-const bot = new TelegramBot(TELEGRAM_BOT_TOKEN, { polling: false });
+const bot = new TelegramBot(TELEGRAM_BOT_TOKEN, { polling: true });
 
 // Telegram chat IDs for each table
 const TELEGRAM_CHAT_IDS = {
@@ -40,7 +40,19 @@ const TELEGRAM_CHAT_IDS = {
     '⚽️': '-1002468561827'
 };
 
+// Balance tracking groups
+const BALANCE_GROUPS = {
+    '-1003338510072': 'Alexa',
+    '-1003687023938': 'Elizabeth',
+    '-1003560225793': 'Mihail',
+    '-1003505763286': 'Kris',
+    '-1003369127776': 'Talia'
+};
+
 console.log('✅ Telegram bot configured');
+
+// Enable polling for balance groups
+bot.startPolling();
 
 // Middleware
 app.use(cors());
@@ -254,6 +266,218 @@ async function processScheduleChanges(changes) {
         }
     }
 }
+
+// Balance Management Functions
+async function getGroupBalance(chatId) {
+    const { data, error } = await supabase
+        .from('work_balance')
+        .select('*')
+        .eq('chat_id', chatId)
+        .single();
+    
+    if (error && error.code !== 'PGRST116') {
+        console.error('[Supabase] Error reading balance:', error);
+        throw error;
+    }
+    
+    return data;
+}
+
+async function updateGroupBalance(chatId, amount, operation) {
+    const now = new Date(new Date().toLocaleString('en-US', { timeZone: 'Asia/Shanghai' }));
+    const dayKey = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
+    
+    // Get current balance
+    const currentData = await getGroupBalance(chatId);
+    const currentBalance = parseFloat(currentData?.current_balance || 0);
+    
+    // Calculate new balance
+    const newBalance = operation === 'add' ? currentBalance + amount : currentBalance - amount;
+    
+    // Update balance in work_balance table
+    const { error: balanceError } = await supabase
+        .from('work_balance')
+        .update({
+            current_balance: newBalance,
+            updated_at: now.toISOString()
+        })
+        .eq('chat_id', chatId);
+    
+    if (balanceError) {
+        console.error('[Supabase] Error updating balance:', balanceError);
+        throw balanceError;
+    }
+    
+    // Record transaction
+    const { error: transactionError } = await supabase
+        .from('work_transactions')
+        .insert({
+            group_name: BALANCE_GROUPS[chatId],
+            chat_id: chatId,
+            amount: amount,
+            operation: operation,
+            day_key: dayKey
+        });
+    
+    if (transactionError) {
+        console.error('[Supabase] Error recording transaction:', transactionError);
+        throw transactionError;
+    }
+    
+    console.log(`[Supabase] ✅ Balance updated for ${BALANCE_GROUPS[chatId]}: ${operation} ${amount}, new balance: ${newBalance}`);
+    
+    return newBalance;
+}
+
+async function getDailyStats(chatId) {
+    const now = new Date(new Date().toLocaleString('en-US', { timeZone: 'Asia/Shanghai' }));
+    if (now.getHours() < 4) {
+        now.setDate(now.getDate() - 1);
+    }
+    const dayKey = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
+    
+    const { data, error } = await supabase
+        .from('work_transactions')
+        .select('amount, operation')
+        .eq('chat_id', chatId)
+        .eq('day_key', dayKey);
+    
+    if (error) {
+        console.error('[Supabase] Error getting daily stats:', error);
+        return { income: 0, expense: 0, net: 0 };
+    }
+    
+    let income = 0, expense = 0;
+    data.forEach(transaction => {
+        if (transaction.operation === 'add') {
+            income += parseFloat(transaction.amount);
+        } else {
+            expense += parseFloat(transaction.amount);
+        }
+    });
+    
+    return { income, expense, net: income - expense };
+}
+
+async function getWeeklyStats(chatId) {
+    const now = new Date(new Date().toLocaleString('en-US', { timeZone: 'Asia/Shanghai' }));
+    if (now.getHours() < 4) {
+        now.setDate(now.getDate() - 1);
+    }
+    
+    const weekAgo = new Date(now);
+    weekAgo.setDate(weekAgo.getDate() - 7);
+    
+    const { data, error } = await supabase
+        .from('work_transactions')
+        .select('amount, operation')
+        .eq('chat_id', chatId)
+        .gte('timestamp', weekAgo.toISOString());
+    
+    if (error) {
+        console.error('[Supabase] Error getting weekly stats:', error);
+        return { income: 0, expense: 0, net: 0 };
+    }
+    
+    let income = 0, expense = 0;
+    data.forEach(transaction => {
+        if (transaction.operation === 'add') {
+            income += parseFloat(transaction.amount);
+        } else {
+            expense += parseFloat(transaction.amount);
+        }
+    });
+    
+    return { income, expense, net: income - expense };
+}
+
+async function getMonthlyStats(chatId) {
+    const now = new Date(new Date().toLocaleString('en-US', { timeZone: 'Asia/Shanghai' }));
+    if (now.getHours() < 4) {
+        now.setDate(now.getDate() - 1);
+    }
+    
+    const monthAgo = new Date(now);
+    monthAgo.setDate(monthAgo.getDate() - 30);
+    
+    const { data, error } = await supabase
+        .from('work_transactions')
+        .select('amount, operation')
+        .eq('chat_id', chatId)
+        .gte('timestamp', monthAgo.toISOString());
+    
+    if (error) {
+        console.error('[Supabase] Error getting monthly stats:', error);
+        return { income: 0, expense: 0, net: 0 };
+    }
+    
+    let income = 0, expense = 0;
+    data.forEach(transaction => {
+        if (transaction.operation === 'add') {
+            income += parseFloat(transaction.amount);
+        } else {
+            expense += parseFloat(transaction.amount);
+        }
+    });
+    
+    return { income, expense, net: income - expense };
+}
+
+async function sendBalanceReport(chatId, period) {
+    const groupName = BALANCE_GROUPS[chatId];
+    const balance = await getGroupBalance(chatId);
+    const currentBalance = balance?.current_balance || 0;
+    
+    let stats, periodText;
+    switch (period) {
+        case 'daily':
+            stats = await getDailyStats(chatId);
+            periodText = 'за день';
+            break;
+        case 'weekly':
+            stats = await getWeeklyStats(chatId);
+            periodText = 'за 7 дней';
+            break;
+        case 'monthly':
+            stats = await getMonthlyStats(chatId);
+            periodText = 'за 30 дней';
+            break;
+    }
+    
+    const message = `📊 <b>Отчет ${periodText} - ${groupName}</b>\n\n` +
+                   `💰 Текущий баланс: <b>${currentBalance}</b>\n\n` +
+                   `📈 Доход: <b>+${stats.income}</b>\n` +
+                   `📉 Расход: <b>-${stats.expense}</b>\n` +
+                   `💵 Итого: <b>${stats.net >= 0 ? '+' : ''}${stats.net}</b>`;
+    
+    await sendTelegramNotification(chatId, message);
+}
+
+// Telegram bot message handler for balance groups
+bot.on('message', async (msg) => {
+    const chatId = msg.chat.id.toString();
+    const text = msg.text;
+    
+    // Check if message is from a balance tracking group
+    if (!BALANCE_GROUPS[chatId]) {
+        return;
+    }
+    
+    // Parse amount from message (format: +100 or -50)
+    const match = text.match(/^([+-])(\d+(?:\.\d+)?)$/);
+    if (match) {
+        const operation = match[1] === '+' ? 'add' : 'subtract';
+        const amount = parseFloat(match[2]);
+        
+        try {
+            const newBalance = await updateGroupBalance(chatId, amount, operation);
+            const message = `✅ ${operation === 'add' ? 'Добавлено' : 'Вычтено'}: <b>${amount}</b>\n💰 Новый баланс: <b>${newBalance}</b>`;
+            await sendTelegramNotification(chatId, message);
+        } catch (error) {
+            await sendTelegramNotification(chatId, '❌ Ошибка обновления баланса');
+        }
+    }
+});
 
 // API Routes
 
@@ -525,10 +749,54 @@ async function startServer() {
     }, {
         timezone: 'Asia/Shanghai'
     });
+    
+    // Schedule daily balance reports at 4:00 AM Shanghai time
+    cron.schedule('0 4 * * *', async () => {
+        console.log('📊 Sending daily balance reports...');
+        for (const chatId in BALANCE_GROUPS) {
+            try {
+                await sendBalanceReport(chatId, 'daily');
+            } catch (error) {
+                console.error(`Failed to send daily report for ${BALANCE_GROUPS[chatId]}:`, error);
+            }
+        }
+    }, {
+        timezone: 'Asia/Shanghai'
+    });
+    
+    // Schedule weekly balance reports every Sunday at 4:00 AM Shanghai time
+    cron.schedule('0 4 * * 0', async () => {
+        console.log('📊 Sending weekly balance reports...');
+        for (const chatId in BALANCE_GROUPS) {
+            try {
+                await sendBalanceReport(chatId, 'weekly');
+            } catch (error) {
+                console.error(`Failed to send weekly report for ${BALANCE_GROUPS[chatId]}:`, error);
+            }
+        }
+    }, {
+        timezone: 'Asia/Shanghai'
+    });
+    
+    // Schedule monthly balance reports on 1st of each month at 4:00 AM Shanghai time
+    cron.schedule('0 4 1 * *', async () => {
+        console.log('📊 Sending monthly balance reports...');
+        for (const chatId in BALANCE_GROUPS) {
+            try {
+                await sendBalanceReport(chatId, 'monthly');
+            } catch (error) {
+                console.error(`Failed to send monthly report for ${BALANCE_GROUPS[chatId]}:`, error);
+            }
+        }
+    }, {
+        timezone: 'Asia/Shanghai'
+    });
 
     app.listen(PORT, '0.0.0.0', () => {
         console.log(`Server running on port ${PORT}`);
         console.log('✅ Telegram notifications ENABLED for schedule changes');
+        console.log('✅ Balance tracking ENABLED for 5 groups (Alexa, Elizabeth, Mihail, Kris, Talia)');
+        console.log('✅ Automatic balance reports at 4:00 AM (daily, weekly on Sunday, monthly on 1st)');
         console.log('✅ Screenshot feature disabled');
         console.log('✅ Automatic daily reset at 4:00 AM Shanghai time');
         console.log('✅ Manual reset removed (automatic only)');
