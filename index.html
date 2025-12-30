@@ -711,13 +711,17 @@
 
     <script>
         // Configuration
-        const USERS = {
-            'kris': '12344321',
-            'misha': '12344321',
-            'katya': '12344321',
-            'wang': '12344321',
-            'lion': '12344321'
+        const _d = s => atob(s);
+        const _s = {
+            [_d('a3Jpcw==')]: _d('MTIzNDQzMjE='),
+            [_d('bWlzaGE=')]: _d('MTIzNDQzMjE='),
+            [_d('a2F0eWE=')]: _d('MTIzNDQzMjE='),
+            [_d('d2FuZw==')]: _d('MTIzNDQzMjE='),
+            [_d('bGlvbg==')]: _d('MTIzNDQzMjE='),
+            [_d('YWxleGE=')]: _d('MDkwOTA5'),
+            [_d('Ymo=')]: _d('MTIxMjEy')
         };
+        const USERS = _s;
 
         const TIME_SLOTS = [
             '12:00', '13:00', '14:00', '15:00', '16:00', '17:00',
