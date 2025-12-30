@@ -26,7 +26,7 @@
                 radial-gradient(at 0% 50%, hsla(355,100%,93%,0.1) 0px, transparent 50%);
         }
 
-        /* Login Screen *
+        /* Login Screen */
         .login-screen {
             display: flex;
             align-items: center;
@@ -344,36 +344,6 @@
             align-items: center;
             justify-content: center;
             gap: 5px;
-        }
-
-        .icon {
-            font-size: 16px;
-        }
-
-        .soccer-icon::after {
-            content: '⚽';
-        }
-
-        .time-icon::after {
-            content: '🕐';
-        }
-
-        /* Activity Log Button */
-        .log-button {
-            background: #222;
-            border: 1px solid #444;
-            color: #fff;
-            padding: 12px 20px;
-            border-radius: 25px;
-            font-size: 14px;
-            cursor: pointer;
-            box-shadow: 0 4px 12px rgba(0,0,0,0.5);
-            transition: all 0.3s;
-        }
-
-        .log-button:active {
-            background: #333;
-            transform: scale(0.95);
         }
 
         /* Activity Log Dialog */
@@ -1256,17 +1226,6 @@
             }
 
             hideAddDialog();
-        }
-
-        function saveData() {
-            saveToServer();
-            alert('✅ Данные сохранены');
-            logActivity(`${currentUser} сохранил данные`);
-        }
-
-        function toggleLog() {
-            const log = document.getElementById('activityLog');
-            log.classList.toggle('show');
         }
 
         function toggleActivityLog() {
