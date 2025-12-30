@@ -289,30 +289,38 @@ async function getGroupBalance(chatId) {
 
 async function updateGroupBalance(chatId, amount, operation) {
     const now = new Date(new Date().toLocaleString('en-US', { timeZone: 'Asia/Shanghai' }));
-    const dayKey = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
-    
+    const timestamp = now.toISOString();
+
+    // CRITICAL: Day changes at 4:00 AM, not midnight!
+    // Must match the logic in getDailyStats/getWeeklyStats/getMonthlyStats
+    const dayDate = new Date(now);
+    if (dayDate.getHours() < 4) {
+        dayDate.setDate(dayDate.getDate() - 1);
+    }
+    const dayKey = `${dayDate.getFullYear()}-${String(dayDate.getMonth() + 1).padStart(2, '0')}-${String(dayDate.getDate()).padStart(2, '0')}`;
+
     // Get current balance
     const currentData = await getGroupBalance(chatId);
     const currentBalance = parseFloat(currentData?.current_balance || 0);
-    
+
     // Calculate new balance
     const newBalance = operation === 'add' ? currentBalance + amount : currentBalance - amount;
-    
+
     // Update balance in work_balance table
     const { error: balanceError } = await supabase
         .from('work_balance')
         .update({
             current_balance: newBalance,
-            updated_at: now.toISOString()
+            updated_at: timestamp
         })
         .eq('chat_id', chatId);
-    
+
     if (balanceError) {
         console.error('[Supabase] Error updating balance:', balanceError);
         throw balanceError;
     }
-    
-    // Record transaction
+
+    // Record transaction with explicit timestamp
     const { error: transactionError } = await supabase
         .from('work_transactions')
         .insert({
@@ -320,16 +328,17 @@ async function updateGroupBalance(chatId, amount, operation) {
             chat_id: chatId,
             amount: amount,
             operation: operation,
-            day_key: dayKey
+            day_key: dayKey,
+            timestamp: timestamp
         });
-    
+
     if (transactionError) {
         console.error('[Supabase] Error recording transaction:', transactionError);
         throw transactionError;
     }
-    
-    console.log(`[Supabase] ✅ Balance updated for ${BALANCE_GROUPS[chatId]}: ${operation} ${amount}, new balance: ${newBalance}`);
-    
+
+    console.log(`[Supabase] ✅ Balance updated for ${BALANCE_GROUPS[chatId]}: ${operation} ${amount}, new balance: ${newBalance}, day_key: ${dayKey}`);
+
     return newBalance;
 }
 
