@@ -768,8 +768,8 @@ async function startServer() {
         timezone: 'Asia/Shanghai'
     });
     
-    // Schedule daily balance reports at 4:00 AM Shanghai time
-    cron.schedule('0 4 * * *', async () => {
+    // Schedule daily balance reports at 4:01 AM Shanghai time (1 min after reset to avoid conflicts)
+    cron.schedule('1 4 * * *', async () => {
         console.log('📊 Sending daily balance reports...');
         for (const chatId in BALANCE_GROUPS) {
             try {

@@ -20,13 +20,13 @@
             color: #fff;
             min-height: 100vh;
             overflow-x: hidden;
-            background-image: 
+            background-image:
                 radial-gradient(at 40% 20%, hsla(280,100%,74%,0.1) 0px, transparent 50%),
                 radial-gradient(at 80% 0%, hsla(189,100%,56%,0.1) 0px, transparent 50%),
                 radial-gradient(at 0% 50%, hsla(355,100%,93%,0.1) 0px, transparent 50%);
         }
 
-        /* Login Screen */
+        /* Login Screen *
         .login-screen {
             display: flex;
             align-items: center;
@@ -338,22 +338,6 @@
             box-shadow: inset 0 0 0 1px rgba(167, 139, 250, 0.2);
         }
 
-        /* Special Markers */
-        .red-x {
-            color: #ff0000;
-            font-size: 24px;
-            font-weight: bold;
-        }
-
-        .green-check {
-            color: #00ff00;
-            font-size: 20px;
-        }
-
-        .yellow-marker {
-            background: rgba(255, 255, 0, 0.1);
-        }
-
         /* Status Indicators */
         .with-icon {
             display: flex;
@@ -611,6 +595,124 @@
             color: #555;
         }
 
+        /* Logout Confirmation Dialog - Glassmorphism */
+        .logout-dialog {
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%) scale(0.9);
+            background: rgba(20, 20, 30, 0.85);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            border: 1px solid rgba(255, 255, 255, 0.15);
+            border-radius: 24px;
+            padding: 35px 40px;
+            display: none;
+            z-index: 250;
+            box-shadow:
+                0 25px 50px rgba(0, 0, 0, 0.5),
+                0 0 0 1px rgba(255, 255, 255, 0.05) inset,
+                0 0 80px rgba(124, 58, 237, 0.15);
+            opacity: 0;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            min-width: 320px;
+            text-align: center;
+        }
+
+        .logout-dialog.show {
+            display: block;
+            opacity: 1;
+            transform: translate(-50%, -50%) scale(1);
+        }
+
+        .logout-dialog-icon {
+            font-size: 48px;
+            margin-bottom: 20px;
+            display: block;
+        }
+
+        .logout-dialog-title {
+            font-size: 20px;
+            font-weight: 600;
+            margin-bottom: 8px;
+            color: #fff;
+            background: linear-gradient(135deg, #a78bfa, #60a5fa);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        .logout-dialog-subtitle {
+            font-size: 16px;
+            color: rgba(255, 255, 255, 0.7);
+            margin-bottom: 30px;
+        }
+
+        .logout-dialog-buttons {
+            display: flex;
+            gap: 15px;
+            justify-content: center;
+        }
+
+        .logout-btn {
+            flex: 1;
+            padding: 14px 24px;
+            border-radius: 14px;
+            font-size: 15px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s;
+            border: none;
+            min-width: 120px;
+        }
+
+        .logout-btn-cancel {
+            background: rgba(255, 255, 255, 0.1);
+            border: 1px solid rgba(255, 255, 255, 0.15);
+            color: #fff;
+        }
+
+        .logout-btn-cancel:hover {
+            background: rgba(255, 255, 255, 0.15);
+            border-color: rgba(255, 255, 255, 0.25);
+            transform: translateY(-2px);
+        }
+
+        .logout-btn-confirm {
+            background: linear-gradient(135deg, #ef4444, #dc2626);
+            color: #fff;
+            box-shadow: 0 10px 25px rgba(239, 68, 68, 0.3);
+        }
+
+        .logout-btn-confirm:hover {
+            background: linear-gradient(135deg, #f87171, #ef4444);
+            transform: translateY(-2px);
+            box-shadow: 0 15px 30px rgba(239, 68, 68, 0.4);
+        }
+
+        .logout-btn:active {
+            transform: translateY(0) scale(0.98);
+        }
+
+        .logout-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0, 0, 0, 0.6);
+            backdrop-filter: blur(5px);
+            -webkit-backdrop-filter: blur(5px);
+            display: none;
+            z-index: 240;
+            opacity: 0;
+            transition: opacity 0.3s;
+        }
+
+        .logout-overlay.show {
+            display: block;
+            opacity: 1;
+        }
+
         /* Responsive adjustments */
         @media (max-width: 768px) {
             .schedule-cell {
@@ -659,6 +761,7 @@
                 <span class="time-display-inner" id="timeDisplay">13:18</span>
                 <button class="header-btn" onclick="showAddDialog()" title="Добавить столбец">+</button>
                 <button class="header-btn" onclick="toggleActivityLog()" title="Журнал действий">📋</button>
+                <button class="header-btn" onclick="showLogoutDialog()" title="Выход / 退出">🚪</button>
             </div>
             <div class="date-display" id="dateDisplay">4 ноября 2025г. в 12:39 — общая</div>
         </div>
@@ -706,6 +809,18 @@
                 <button class="close-log-btn" onclick="toggleActivityLog()">×</button>
             </div>
             <div id="activityLog"></div>
+        </div>
+
+        <!-- Logout Confirmation Dialog -->
+        <div class="logout-overlay" id="logoutOverlay" onclick="hideLogoutDialog()"></div>
+        <div class="logout-dialog" id="logoutDialog">
+            <span class="logout-dialog-icon">🚪</span>
+            <div class="logout-dialog-title">Выход / 退出</div>
+            <div class="logout-dialog-subtitle">Вы уверены?<br>你确定吗?</div>
+            <div class="logout-dialog-buttons">
+                <button class="logout-btn logout-btn-cancel" onclick="hideLogoutDialog()">Нет / 不</button>
+                <button class="logout-btn logout-btn-confirm" onclick="confirmLogout()">Да / 是</button>
+            </div>
         </div>
     </div>
 
@@ -799,7 +914,7 @@
             const now = new Date(new Date().toLocaleString("en-US", {timeZone: "Asia/Shanghai"}));
             const hours = String(now.getHours()).padStart(2, '0');
             const minutes = String(now.getMinutes()).padStart(2, '0');
-            
+
             if (document.getElementById('timeDisplay')) {
                 document.getElementById('timeDisplay').textContent = `${hours}:${minutes}`;
             }
@@ -934,11 +1049,11 @@
 
         function switchDate(index) {
             currentDate = index;
-            
+
             // Update active tab
             document.querySelectorAll('.date-tab').forEach(tab => tab.classList.remove('active'));
             document.getElementById(`tab${index}`).classList.add('active');
-            
+
             renderSchedule();
         }
 
@@ -971,7 +1086,7 @@
             });
 
             let html = '<div class="schedule-grid">';
-            
+
             // Header row
             html += '<div class="schedule-row table-header">';
             html += '<div class="schedule-cell time-cell"></div>';
@@ -979,7 +1094,7 @@
                 html += `<div class="schedule-cell">${table}</div>`;
             });
             html += '</div>';
-            
+
             // Address row
             html += '<div class="schedule-row address-row">';
             html += '<div class="schedule-cell time-cell"></div>';
@@ -993,7 +1108,7 @@
                 </div>`;
             });
             html += '</div>';
-            
+
             // Time slots
             TIME_SLOTS.forEach(time => {
                 html += '<div class="schedule-row">';
@@ -1089,7 +1204,7 @@
 
             const currentData = scheduleData[dateKey];
             const existingTables = currentData.tables || [];
-            
+
             // Update available options
             document.querySelectorAll('.table-option').forEach(option => {
                 const tableNum = option.textContent;
@@ -1101,7 +1216,7 @@
                     option.onclick = () => addTable(tableNum);
                 }
             });
-            
+
             document.getElementById('overlay').classList.add('show');
             document.getElementById('addDialog').classList.add('show');
         }
@@ -1196,16 +1311,16 @@
 
             const currentData = scheduleData[dateKey];
             const existingTables = currentData.tables || [];
-            
+
             if (existingTables.length === 0) {
                 alert('Нет столбцов для удаления');
                 return;
             }
-            
-            const optionsHTML = existingTables.map(table => 
+
+            const optionsHTML = existingTables.map(table =>
                 `<div class="table-option" onclick="deleteTable('${table}')">${table}</div>`
             ).join('');
-            
+
             document.getElementById('deleteOptions').innerHTML = optionsHTML;
             document.getElementById('overlay').classList.add('show');
             document.getElementById('deleteDialog').classList.add('show');
@@ -1220,12 +1335,11 @@
             // Use fixed dates from server (prevents midnight auto-shift)
             const dates = activeDates.length > 0 ? activeDates : getNextThreeDates();
             const dateKey = dates[currentDate].key;
-            
             if (confirm(`Удалить столбец ${tableNum}?`)) {
                 const index = scheduleData[dateKey].tables.indexOf(tableNum);
                 if (index > -1) {
                     scheduleData[dateKey].tables.splice(index, 1);
-                    
+
                     if (scheduleData[dateKey].slots && scheduleData[dateKey].slots[tableNum]) {
                         delete scheduleData[dateKey].slots[tableNum];
                     }
@@ -1235,10 +1349,31 @@
                     logActivity(`${currentUser} удалил стол ${tableNum}`);
                 }
             }
-            
+
             hideDeleteDialog();
         }
 
+        // Logout dialog functions
+        function showLogoutDialog() {
+            document.getElementById('logoutOverlay').classList.add('show');
+            document.getElementById('logoutDialog').classList.add('show');
+        }
+
+        function hideLogoutDialog() {
+            document.getElementById('logoutOverlay').classList.remove('show');
+            document.getElementById('logoutDialog').classList.remove('show');
+        }
+
+        function confirmLogout() {
+            logActivity(`${currentUser} вышел из системы`);
+            localStorage.removeItem('currentUser');
+            currentUser = null;
+            hideLogoutDialog();
+            document.getElementById('appContainer').style.display = 'none';
+            document.getElementById('loginScreen').style.display = 'flex';
+            document.getElementById('username').value = '';
+            document.getElementById('password').value = '';
+        }
 
     </script>
 </body>
