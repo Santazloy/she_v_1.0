@@ -22,7 +22,14 @@ const supabase = createClient(SUPABASE_URL, SUPABASE_KEY);
 console.log('✅ Supabase client initialized');
 
 // Telegram bot configuration
-const TELEGRAM_BOT_TOKEN = process.env.TELEGRAM_BOT_TOKEN || '7780834477:AAHLcpVOWOQNn1DkGMneZGm2D-GQTbk-uCk';
+const TELEGRAM_BOT_TOKEN = process.env.TELEGRAM_BOT_TOKEN;
+
+if (!TELEGRAM_BOT_TOKEN) {
+    console.error('❌ FATAL: TELEGRAM_BOT_TOKEN not configured!');
+    console.error('Set TELEGRAM_BOT_TOKEN in .env file');
+    process.exit(1);
+}
+
 const bot = new TelegramBot(TELEGRAM_BOT_TOKEN, { polling: true });
 
 // Telegram chat IDs for each table
@@ -50,9 +57,6 @@ const BALANCE_GROUPS = {
 };
 
 console.log('✅ Telegram bot configured');
-
-// Enable polling for balance groups
-bot.startPolling();
 
 // Middleware
 app.use(cors());
