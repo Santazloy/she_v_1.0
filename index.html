@@ -1065,11 +1065,12 @@
             });
             html += '</div>';
 
-            // Address row
+            // Address row (synced across all days via sharedAddresses)
             html += '<div class="schedule-row address-row">';
             html += '<div class="schedule-cell time-cell"></div>';
             tables.forEach(table => {
-                const address = escapeHtml(currentData.slots?.[table]?.address || '');
+                // Read from global sharedAddresses (synced across all days)
+                const address = escapeHtml(scheduleData.sharedAddresses?.[table] || '');
                 html += `<div class="schedule-cell data-cell">
                     <input type="text" class="address-input"
                         placeholder="地址"
@@ -1116,19 +1117,14 @@
             container.innerHTML = html;
         }
 
+        // Update address (synced across all days via sharedAddresses)
         function updateAddress(table, value) {
-            // Use fixed dates from server (prevents midnight auto-shift)
-            const dates = activeDates.length > 0 ? activeDates : getNextThreeDates();
-            const dateKey = dates[currentDate].key;
-
-            if (!scheduleData[dateKey].slots) {
-                scheduleData[dateKey].slots = {};
-            }
-            if (!scheduleData[dateKey].slots[table]) {
-                scheduleData[dateKey].slots[table] = {};
+            // Save to global sharedAddresses storage (synced across all days)
+            if (!scheduleData.sharedAddresses) {
+                scheduleData.sharedAddresses = {};
             }
 
-            scheduleData[dateKey].slots[table].address = value;
+            scheduleData.sharedAddresses[table] = value;
             saveToServer();
             logActivity(`${currentUser} обновил адрес стола ${table}`);
         }

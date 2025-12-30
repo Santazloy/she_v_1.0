@@ -139,10 +139,11 @@ async function sendTelegramNotification(chatId, message) {
 function detectScheduleChanges(oldData, newData, user) {
     const changes = [];
     
-    // Get all unique date keys from both old and new data
+    // Get all unique date keys from both old and new data (exclude global keys)
+    const globalKeys = ['sharedNotes', 'sharedAddresses'];
     const allDates = new Set([
-        ...Object.keys(oldData || {}).filter(key => key !== 'sharedNotes'),
-        ...Object.keys(newData || {}).filter(key => key !== 'sharedNotes')
+        ...Object.keys(oldData || {}).filter(key => !globalKeys.includes(key)),
+        ...Object.keys(newData || {}).filter(key => !globalKeys.includes(key))
     ]);
     
     allDates.forEach(dateKey => {
@@ -624,9 +625,12 @@ async function archiveAndResetSchedule() {
         // Get today's key (which will become yesterday after reset)
         const todayKey = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
 
-        // Preserve shared notes (NOT tied to any specific date)
+        // Preserve shared notes and shared addresses (NOT tied to any specific date)
         const sharedNotes = data.scheduleData.sharedNotes || '';
+        const sharedAddresses = data.scheduleData.sharedAddresses || {};
         console.log('Preserving shared notes:', sharedNotes ? `${sharedNotes.substring(0, 50)}...` : 'empty');
+        console.log('Preserving shared addresses:', Object.keys(sharedAddresses).length > 0 ?
+            Object.keys(sharedAddresses).map(t => `${t}: ${sharedAddresses[t].substring(0, 20)}...`).join(', ') : 'empty');
 
         // Get yesterday's date (the one we need to remove)
         const yesterday = new Date(now);
@@ -671,45 +675,16 @@ async function archiveAndResetSchedule() {
             };
         }
 
-        // IMPORTANT: Shared notes stay at top level (not in any specific date)
+        // IMPORTANT: Shared notes and addresses stay at top level (not in any specific date)
         if (sharedNotes) {
             data.scheduleData.sharedNotes = sharedNotes;
             console.log('Preserved shared notes at top level');
         }
 
-        // Preserve and transfer addresses from current first day to new first day
-        const todaySlots = data.scheduleData?.[todayKey]?.slots || {};
-        const addressesToPreserve = {};
-
-        // Collect all addresses from today
-        Object.keys(todaySlots).forEach(table => {
-            if (todaySlots[table]?.address) {
-                addressesToPreserve[table] = todaySlots[table].address;
-            }
-        });
-
-        console.log('Preserving addresses:', Object.keys(addressesToPreserve).length > 0 ?
-            Object.keys(addressesToPreserve).map(t => `${t}: ${addressesToPreserve[t].substring(0, 20)}...`).join(', ') :
-            'none');
-
-        // Transfer addresses to tomorrow (new first day)
-        if (Object.keys(addressesToPreserve).length > 0) {
-            // Ensure slots structure exists
-            if (!data.scheduleData[tomorrowKey].slots) {
-                data.scheduleData[tomorrowKey].slots = {};
-            }
-
-            // Transfer each address to corresponding table in tomorrow
-            Object.keys(addressesToPreserve).forEach(table => {
-                // Ensure table slot exists
-                if (!data.scheduleData[tomorrowKey].slots[table]) {
-                    data.scheduleData[tomorrowKey].slots[table] = {};
-                }
-                // Transfer the address
-                data.scheduleData[tomorrowKey].slots[table].address = addressesToPreserve[table];
-            });
-
-            console.log(`Transferred ${Object.keys(addressesToPreserve).length} addresses to new first day: ${tomorrowKey}`);
+        // Shared addresses are now global and don't need transfer - just preserve them
+        if (Object.keys(sharedAddresses).length > 0) {
+            data.scheduleData.sharedAddresses = sharedAddresses;
+            console.log('Preserved shared addresses at top level');
         }
 
         // Update active dates (CRITICAL: prevents UI from auto-shifting at midnight)
@@ -720,7 +695,8 @@ async function archiveAndResetSchedule() {
         await writeScheduleData(data);
 
         console.log('Reset completed successfully');
-        console.log('Current days:', Object.keys(data.scheduleData).filter(key => key !== 'sharedNotes'));
+        const globalKeys = ['sharedNotes', 'sharedAddresses'];
+        console.log('Current days:', Object.keys(data.scheduleData).filter(key => !globalKeys.includes(key)));
 
     } catch (error) {
         console.error('Error in reset:', error.message);
