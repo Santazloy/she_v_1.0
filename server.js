@@ -44,7 +44,8 @@ const TELEGRAM_CHAT_IDS = {
     '999': '-1003362558902',
     '北京1': '-1003591371312',
     '北京2': '-1003493686928',
-    '⚽️': '-1002468561827'
+    '⚽️': '-1002468561827',
+    '北京': '-1003698590476'
 };
 
 // Balance tracking groups
@@ -171,16 +172,12 @@ function detectScheduleChanges(oldData, newData, user) {
                 const newValue = newSlots[timeSlot];
                 
                 if (oldValue !== newValue) {
-                    // Parse date for display
-                    const [year, month, day] = dateKey.split('-');
-                    const displayDate = `${parseInt(day)}.${parseInt(month)}`;
-                    
                     if (!oldValue && newValue) {
                         // New entry added
                         changes.push({
                             type: 'add',
                             table,
-                            date: displayDate,
+                            dateKey,
                             time: timeSlot,
                             newValue,
                             user
@@ -190,7 +187,7 @@ function detectScheduleChanges(oldData, newData, user) {
                         changes.push({
                             type: 'delete',
                             table,
-                            date: displayDate,
+                            dateKey,
                             time: timeSlot,
                             oldValue,
                             user
@@ -200,7 +197,7 @@ function detectScheduleChanges(oldData, newData, user) {
                         changes.push({
                             type: 'modify',
                             table,
-                            date: displayDate,
+                            dateKey,
                             time: timeSlot,
                             oldValue,
                             newValue,
@@ -223,50 +220,75 @@ function isOnlyEmojis(str) {
     return str.length > 0 && withoutEmojis.length === 0;
 }
 
-// Process and send notifications for detected changes
+// Get today's date key (with 4:00 AM boundary)
+function getTodayKey() {
+    const now = new Date(new Date().toLocaleString('en-US', { timeZone: 'Asia/Shanghai' }));
+    if (now.getHours() < 4) {
+        now.setDate(now.getDate() - 1);
+    }
+    return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
+}
+
+// Process and send notifications for detected changes (TODAY only!)
 async function processScheduleChanges(changes) {
+    const todayKey = getTodayKey();
+
     for (const change of changes) {
+        // ONLY publish changes for TODAY - future days will be published when they become "today"
+        if (change.dateKey !== todayKey) {
+            console.log(`Skipping notification for future day ${change.dateKey} (today is ${todayKey})`);
+            continue;
+        }
+
         // Skip if value contains only emojis
         if (isOnlyEmojis(change.newValue || '') || isOnlyEmojis(change.oldValue || '')) {
             console.log(`Skipping emoji-only change in ${change.table}`);
             continue;
         }
-        
+
         let message = '';
-        
+
         // Extract actual booking value (time slot value, not the time column)
         const bookingValue = change.newValue || change.oldValue || '';
-        
+
+        // Messages WITHOUT dates (as requested)
         switch (change.type) {
             case 'add':
                 message = `📝 <b>бронь/预订 ${change.table}</b>\n` +
-                         `📅 ${change.date} ⏰ ${bookingValue}`;
+                         `⏰ ${bookingValue}`;
                 break;
-                
+
             case 'delete':
                 message = `🗑️ <b>отмена брони/消除 ${change.table}</b>\n` +
-                         `❌ ${change.date} ⏰ ${bookingValue}`;
+                         `❌ ${bookingValue}`;
                 break;
-                
+
             case 'modify':
                 message = `✏️ <b>Изменение/改变 ${change.table}</b>\n` +
-                         `📅${change.date}  ⏰ ${change.oldValue}🔄 ${change.newValue}`;
+                         `⏰ ${change.oldValue}🔄 ${change.newValue}`;
                 break;
         }
-        
+
         // Send to table-specific group
         const tableChatId = TELEGRAM_CHAT_IDS[change.table];
         if (tableChatId) {
             await sendTelegramNotification(tableChatId, message);
         }
-        
-        // Check if entry contains ⚽️ or 👄 emojis
+
+        // Check if entry contains ⚽️ or 👄 emojis -> send to football group
         const checkValue = change.newValue || change.oldValue || '';
         if (checkValue.includes('⚽️') || checkValue.includes('👄')) {
-            // Also send to football group
             const footballChatId = TELEGRAM_CHAT_IDS['⚽️'];
             if (footballChatId && footballChatId !== tableChatId) {
                 await sendTelegramNotification(footballChatId, message);
+            }
+        }
+
+        // Check if entry contains 💎 emoji -> send to 北京 group
+        if (checkValue.includes('💎')) {
+            const beijingChatId = TELEGRAM_CHAT_IDS['北京'];
+            if (beijingChatId && beijingChatId !== tableChatId) {
+                await sendTelegramNotification(beijingChatId, message);
             }
         }
     }
@@ -605,6 +627,63 @@ function getNextThreeDates() {
     return dates;
 }
 
+// Publish all entries for a specific day (used when day becomes "today" at 4:00 AM)
+async function publishDayEntries(scheduleData, dateKey) {
+    const dayData = scheduleData[dateKey];
+    if (!dayData || !dayData.tables || dayData.tables.length === 0) {
+        console.log(`No entries to publish for ${dateKey}`);
+        return;
+    }
+
+    console.log(`📢 Publishing entries for new day ${dateKey}...`);
+
+    const timeSlots = ['12:00', '13:00', '14:00', '15:00', '16:00', '17:00',
+                       '18:00', '19:00', '20:00', '21:00', '22:00', '23:00',
+                       '00:00', '01:00', '02:00'];
+
+    // Iterate through tables and time slots in order (top to bottom)
+    for (const table of dayData.tables) {
+        const slots = dayData.slots?.[table] || {};
+
+        for (const timeSlot of timeSlots) {
+            const value = slots[timeSlot];
+            if (!value) continue;
+
+            // Skip if value contains only emojis
+            if (isOnlyEmojis(value)) {
+                console.log(`Skipping emoji-only entry in ${table} at ${timeSlot}`);
+                continue;
+            }
+
+            const message = `📝 <b>бронь/预订 ${table}</b>\n⏰ ${value}`;
+
+            // Send to table-specific group
+            const tableChatId = TELEGRAM_CHAT_IDS[table];
+            if (tableChatId) {
+                await sendTelegramNotification(tableChatId, message);
+            }
+
+            // Check if entry contains ⚽️ or 👄 emojis -> send to football group
+            if (value.includes('⚽️') || value.includes('👄')) {
+                const footballChatId = TELEGRAM_CHAT_IDS['⚽️'];
+                if (footballChatId && footballChatId !== tableChatId) {
+                    await sendTelegramNotification(footballChatId, message);
+                }
+            }
+
+            // Check if entry contains 💎 emoji -> send to 北京 group
+            if (value.includes('💎')) {
+                const beijingChatId = TELEGRAM_CHAT_IDS['北京'];
+                if (beijingChatId && beijingChatId !== tableChatId) {
+                    await sendTelegramNotification(beijingChatId, message);
+                }
+            }
+        }
+    }
+
+    console.log(`✅ Finished publishing entries for ${dateKey}`);
+}
+
 // Archive and reset schedule (manual trigger only)
 async function archiveAndResetSchedule() {
     try {
@@ -697,6 +776,10 @@ async function archiveAndResetSchedule() {
         console.log('Reset completed successfully');
         const globalKeys = ['sharedNotes', 'sharedAddresses'];
         console.log('Current days:', Object.keys(data.scheduleData).filter(key => !globalKeys.includes(key)));
+
+        // IMPORTANT: Publish all entries for the new "today" (which was "tomorrow" before reset)
+        // This ensures future entries are announced when they become current
+        await publishDayEntries(data.scheduleData, todayKey);
 
     } catch (error) {
         console.error('Error in reset:', error.message);
