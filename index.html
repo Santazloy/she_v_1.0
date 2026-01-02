@@ -5,6 +5,8 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>Shanghai Schedule</title>
     <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
+
         * {
             margin: 0;
             padding: 0;
@@ -14,354 +16,650 @@
             user-select: none;
         }
 
-        body {
-            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'PingFang SC', 'Hiragino Sans GB', 'Microsoft YaHei', sans-serif;
-            background: #0a0a0a;
-            color: #fff;
-            min-height: 100vh;
-            overflow-x: hidden;
-            background-image:
-                radial-gradient(at 40% 20%, hsla(280,100%,74%,0.1) 0px, transparent 50%),
-                radial-gradient(at 80% 0%, hsla(189,100%,56%,0.1) 0px, transparent 50%),
-                radial-gradient(at 0% 50%, hsla(355,100%,93%,0.1) 0px, transparent 50%);
+        :root {
+            --bg-primary: #0a0a0f;
+            --bg-secondary: #12121a;
+            --bg-card: rgba(18, 18, 26, 0.8);
+            --accent-purple: #8b5cf6;
+            --accent-blue: #3b82f6;
+            --accent-cyan: #06b6d4;
+            --accent-pink: #ec4899;
+            --accent-green: #10b981;
+            --text-primary: #ffffff;
+            --text-secondary: rgba(255, 255, 255, 0.7);
+            --text-muted: rgba(255, 255, 255, 0.4);
+            --border-color: rgba(255, 255, 255, 0.08);
+            --border-hover: rgba(255, 255, 255, 0.15);
+            --glow-purple: rgba(139, 92, 246, 0.4);
+            --glow-blue: rgba(59, 130, 246, 0.4);
         }
 
-        /* Login Screen */
+        body {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+            background: var(--bg-primary);
+            color: var(--text-primary);
+            min-height: 100vh;
+            overflow-x: hidden;
+        }
+
+        /* Animated Background */
+        .bg-gradient {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background:
+                radial-gradient(ellipse at 20% 20%, rgba(139, 92, 246, 0.15) 0%, transparent 50%),
+                radial-gradient(ellipse at 80% 20%, rgba(59, 130, 246, 0.12) 0%, transparent 50%),
+                radial-gradient(ellipse at 50% 80%, rgba(236, 72, 153, 0.1) 0%, transparent 50%),
+                radial-gradient(ellipse at 10% 80%, rgba(6, 182, 212, 0.08) 0%, transparent 40%);
+            pointer-events: none;
+            z-index: 0;
+            animation: bgPulse 15s ease-in-out infinite alternate;
+        }
+
+        @keyframes bgPulse {
+            0% { opacity: 1; transform: scale(1); }
+            100% { opacity: 0.8; transform: scale(1.05); }
+        }
+
+        /* ========== LOGIN SCREEN ========== */
         .login-screen {
             display: flex;
             align-items: center;
             justify-content: center;
             min-height: 100vh;
-            background: inherit;
+            position: relative;
+            z-index: 1;
+            padding: 20px;
         }
 
         .login-box {
-            background: rgba(17, 17, 17, 0.8);
-            backdrop-filter: blur(10px);
-            border: 1px solid rgba(255, 255, 255, 0.1);
-            border-radius: 20px;
-            padding: 40px;
-            width: 90%;
-            max-width: 380px;
-            box-shadow: 0 20px 50px rgba(0, 0, 0, 0.5);
+            background: var(--bg-card);
+            backdrop-filter: blur(40px);
+            -webkit-backdrop-filter: blur(40px);
+            border: 1px solid var(--border-color);
+            border-radius: 28px;
+            padding: 50px 40px;
+            width: 100%;
+            max-width: 420px;
+            box-shadow:
+                0 25px 50px rgba(0, 0, 0, 0.4),
+                0 0 100px rgba(139, 92, 246, 0.1),
+                inset 0 1px 0 rgba(255, 255, 255, 0.05);
+            animation: loginAppear 0.6s ease-out;
+        }
+
+        @keyframes loginAppear {
+            from {
+                opacity: 0;
+                transform: translateY(30px) scale(0.95);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0) scale(1);
+            }
+        }
+
+        .login-logo {
+            width: 80px;
+            height: 80px;
+            margin: 0 auto 25px;
+            background: linear-gradient(135deg, var(--accent-purple), var(--accent-blue));
+            border-radius: 24px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 36px;
+            box-shadow: 0 10px 40px var(--glow-purple);
+            animation: logoFloat 3s ease-in-out infinite;
+        }
+
+        @keyframes logoFloat {
+            0%, 100% { transform: translateY(0); }
+            50% { transform: translateY(-8px); }
         }
 
         .login-title {
             text-align: center;
-            font-size: 28px;
-            margin-bottom: 30px;
-            color: #fff;
-            font-weight: 600;
-            background: linear-gradient(to right, #a78bfa, #60a5fa);
+            font-size: 32px;
+            margin-bottom: 8px;
+            font-weight: 700;
+            background: linear-gradient(135deg, #fff 0%, rgba(255,255,255,0.8) 100%);
             -webkit-background-clip: text;
             -webkit-text-fill-color: transparent;
+            letter-spacing: -0.5px;
+        }
+
+        .login-subtitle {
+            text-align: center;
+            font-size: 14px;
+            color: var(--text-muted);
+            margin-bottom: 35px;
+        }
+
+        .input-group {
+            position: relative;
+            margin-bottom: 20px;
+        }
+
+        .input-icon {
+            position: absolute;
+            left: 18px;
+            top: 50%;
+            transform: translateY(-50%);
+            font-size: 18px;
+            opacity: 0.5;
+            transition: opacity 0.3s;
         }
 
         .login-input {
             width: 100%;
-            padding: 14px 16px;
-            margin: 10px 0;
-            background: rgba(255, 255, 255, 0.05);
-            border: 1px solid rgba(255, 255, 255, 0.1);
-            color: #fff;
+            padding: 18px 18px 18px 52px;
+            background: rgba(255, 255, 255, 0.03);
+            border: 1px solid var(--border-color);
+            color: var(--text-primary);
             font-size: 16px;
-            border-radius: 12px;
-            transition: all 0.3s;
+            font-family: inherit;
+            border-radius: 16px;
+            transition: all 0.3s ease;
         }
 
         .login-input:focus {
             outline: none;
-            border-color: rgba(167, 139, 250, 0.5);
-            background: rgba(255, 255, 255, 0.08);
+            border-color: var(--accent-purple);
+            background: rgba(139, 92, 246, 0.05);
+            box-shadow: 0 0 0 4px rgba(139, 92, 246, 0.1);
+        }
+
+        .login-input:focus + .input-icon,
+        .login-input:not(:placeholder-shown) + .input-icon {
+            opacity: 1;
+        }
+
+        .login-input::placeholder {
+            color: var(--text-muted);
         }
 
         .login-button {
             width: 100%;
-            padding: 14px;
-            margin-top: 20px;
-            background: linear-gradient(135deg, #7c3aed, #2563eb);
+            padding: 18px;
+            margin-top: 10px;
+            background: linear-gradient(135deg, var(--accent-purple), var(--accent-blue));
             border: none;
             color: #fff;
             font-size: 16px;
-            font-weight: 500;
-            border-radius: 12px;
+            font-weight: 600;
+            font-family: inherit;
+            border-radius: 16px;
             cursor: pointer;
-            transition: all 0.3s;
-            box-shadow: 0 10px 30px rgba(124, 58, 237, 0.3);
+            transition: all 0.3s ease;
+            box-shadow: 0 10px 40px var(--glow-purple);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .login-button::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(255,255,255,0.2), transparent);
+            transition: left 0.5s;
         }
 
         .login-button:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 15px 35px rgba(124, 58, 237, 0.4);
+            transform: translateY(-3px);
+            box-shadow: 0 15px 50px var(--glow-purple);
+        }
+
+        .login-button:hover::before {
+            left: 100%;
         }
 
         .login-button:active {
-            transform: translateY(0);
+            transform: translateY(-1px);
         }
 
         .error-msg {
-            color: #ff4444;
+            color: #f87171;
             text-align: center;
-            margin-top: 10px;
+            margin-top: 15px;
             font-size: 14px;
+            font-weight: 500;
+            animation: shake 0.5s ease-in-out;
         }
 
-        /* Main App */
+        @keyframes shake {
+            0%, 100% { transform: translateX(0); }
+            25% { transform: translateX(-5px); }
+            75% { transform: translateX(5px); }
+        }
+
+        /* ========== MAIN APP ========== */
         .app-container {
             display: none;
             min-height: 100vh;
-            background: transparent;
+            position: relative;
+            z-index: 1;
         }
 
-        /* Header */
+        /* ========== HEADER ========== */
         .header {
-            background: rgba(10, 10, 10, 0.9);
-            backdrop-filter: blur(10px);
-            padding: 15px 10px;
-            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+            background: rgba(10, 10, 15, 0.85);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            padding: 16px 20px;
+            border-bottom: 1px solid var(--border-color);
             position: sticky;
             top: 0;
             z-index: 100;
-            box-shadow: 0 2px 20px rgba(0, 0, 0, 0.5);
         }
 
-        .time-display {
+        .header-content {
             display: flex;
             align-items: center;
             justify-content: center;
-            gap: 15px;
-            font-size: 32px;
-            font-weight: bold;
-            margin-bottom: 5px;
+            gap: 12px;
+            margin-bottom: 8px;
         }
 
         .time-display-inner {
-            font-size: 32px;
+            font-size: 42px;
+            font-weight: 700;
+            background: linear-gradient(135deg, #fff, rgba(255,255,255,0.7));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            letter-spacing: -1px;
+            font-variant-numeric: tabular-nums;
         }
 
         .header-btn {
-            background: rgba(255, 255, 255, 0.08);
-            border: 1px solid rgba(255, 255, 255, 0.1);
-            color: #fff;
-            width: 42px;
-            height: 42px;
-            border-radius: 50%;
-            font-size: 24px;
+            width: 46px;
+            height: 46px;
+            border-radius: 14px;
+            border: 1px solid var(--border-color);
+            background: rgba(255, 255, 255, 0.03);
+            color: var(--text-primary);
+            font-size: 20px;
             cursor: pointer;
             display: flex;
             align-items: center;
             justify-content: center;
-            transition: all 0.3s;
+            transition: all 0.3s ease;
         }
 
         .header-btn:hover {
-            background: rgba(255, 255, 255, 0.12);
-            border-color: rgba(255, 255, 255, 0.2);
-            transform: translateY(-1px);
+            background: rgba(139, 92, 246, 0.1);
+            border-color: var(--accent-purple);
+            transform: translateY(-2px);
+            box-shadow: 0 5px 20px rgba(139, 92, 246, 0.2);
         }
 
         .header-btn:active {
-            transform: scale(0.95) translateY(0);
+            transform: translateY(0) scale(0.95);
         }
 
+        .header-btn.danger:hover {
+            background: rgba(239, 68, 68, 0.1);
+            border-color: #ef4444;
+            box-shadow: 0 5px 20px rgba(239, 68, 68, 0.2);
+        }
 
         .date-display {
             text-align: center;
-            font-size: 14px;
-            color: #888;
-            margin-bottom: 10px;
+            font-size: 13px;
+            color: var(--text-muted);
+            font-weight: 500;
         }
 
-        /* Date Navigation */
+        /* ========== DATE TABS ========== */
         .date-tabs {
             display: flex;
-            justify-content: space-around;
-            padding: 15px 10px;
-            background: rgba(17, 17, 17, 0.5);
-            backdrop-filter: blur(5px);
-            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+            gap: 8px;
+            padding: 16px 20px;
+            background: rgba(18, 18, 26, 0.5);
+            border-bottom: 1px solid var(--border-color);
         }
 
         .date-tab {
             flex: 1;
             text-align: center;
-            padding: 10px;
-            color: #888;
-            border: none;
-            background: transparent;
+            padding: 14px 20px;
+            color: var(--text-secondary);
+            border: 1px solid var(--border-color);
+            background: rgba(255, 255, 255, 0.02);
             font-size: 15px;
-            font-weight: 500;
+            font-weight: 600;
+            font-family: inherit;
             cursor: pointer;
+            border-radius: 14px;
+            transition: all 0.3s ease;
             position: relative;
-            transition: all 0.3s;
+        }
+
+        .date-tab:hover {
+            background: rgba(255, 255, 255, 0.05);
+            border-color: var(--border-hover);
         }
 
         .date-tab.active {
             color: #fff;
+            background: linear-gradient(135deg, rgba(139, 92, 246, 0.2), rgba(59, 130, 246, 0.2));
+            border-color: var(--accent-purple);
+            box-shadow: 0 5px 25px rgba(139, 92, 246, 0.15);
         }
 
-        .date-tab.active::after {
-            content: '';
-            position: absolute;
-            bottom: -15px;
-            left: 20%;
-            right: 20%;
-            height: 3px;
-            background: linear-gradient(to right, #a78bfa, #60a5fa);
-            border-radius: 2px;
-        }
-
-        /* Schedule Container */
+        /* ========== SCHEDULE TABLE ========== */
         .schedule-container {
-            padding: 0;
+            padding: 20px;
         }
 
-        /* Schedule Grid */
         .schedule-grid {
             display: table;
             width: 100%;
-            border-collapse: collapse;
-            margin-top: 1px;
+            border-collapse: separate;
+            border-spacing: 0;
+            background: var(--bg-card);
+            backdrop-filter: blur(20px);
+            border-radius: 20px;
+            overflow: hidden;
+            border: 1px solid var(--border-color);
+            box-shadow: 0 10px 50px rgba(0, 0, 0, 0.3);
         }
 
         .schedule-row {
             display: table-row;
-            border-bottom: 1px solid rgba(255, 255, 255, 0.08);
-            transition: all 0.2s;
         }
 
-        .schedule-row:hover {
-            background: rgba(255, 255, 255, 0.02);
+        .schedule-row:not(:last-child) .schedule-cell {
+            border-bottom: 1px solid var(--border-color);
         }
 
         .schedule-cell {
             display: table-cell;
-            padding: 8px;
-            border-right: 1px solid rgba(255, 255, 255, 0.08);
+            padding: 12px 10px;
+            border-right: 1px solid var(--border-color);
             vertical-align: middle;
             text-align: center;
-            position: relative;
+            transition: background 0.2s;
         }
 
         .schedule-cell:last-child {
             border-right: none;
         }
 
-        /* Table Headers */
+        /* Table Header */
         .table-header {
-            background: rgba(17, 17, 17, 0.9);
-            backdrop-filter: blur(5px);
-            position: sticky;
-            top: 0;
-            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+            background: linear-gradient(135deg, rgba(139, 92, 246, 0.15), rgba(59, 130, 246, 0.1));
         }
 
         .table-header .schedule-cell {
-            font-weight: 600;
+            font-weight: 700;
             font-size: 18px;
-            padding: 14px 8px;
+            padding: 18px 12px;
             color: #fff;
-            background: linear-gradient(135deg, rgba(124, 58, 237, 0.1), rgba(37, 99, 235, 0.1));
+            text-shadow: 0 2px 10px rgba(0, 0, 0, 0.3);
+            letter-spacing: 0.5px;
         }
 
         /* Time Column */
         .time-cell {
-            background: #0a0a0a;
+            background: rgba(0, 0, 0, 0.3);
             font-size: 13px;
-            color: #888;
-            width: 60px;
-            font-weight: 500;
+            color: var(--text-muted);
+            width: 65px;
+            font-weight: 600;
+            font-variant-numeric: tabular-nums;
         }
 
         /* Data Cells */
         .data-cell {
-            min-height: 45px;
+            min-height: 50px;
             position: relative;
             cursor: pointer;
-            background: rgba(0, 0, 0, 0.3);
-            transition: all 0.2s;
+            background: rgba(0, 0, 0, 0.2);
+            transition: all 0.2s ease;
         }
 
         .data-cell:hover {
-            background: rgba(255, 255, 255, 0.05);
+            background: rgba(139, 92, 246, 0.08);
         }
 
-        .data-cell:active {
-            background: rgba(255, 255, 255, 0.08);
-        }
-
-        /* Input Fields */
+        /* Cell Inputs */
         .cell-input {
             width: 100%;
             height: 100%;
-            min-height: 45px;
+            min-height: 50px;
             background: transparent;
             border: none;
-            color: #fff;
+            color: var(--text-primary);
             text-align: center;
             font-size: 14px;
-            padding: 5px;
+            font-family: inherit;
+            padding: 8px;
             transition: all 0.2s;
         }
 
         .cell-input:focus {
             outline: none;
-            background: rgba(167, 139, 250, 0.1);
-            box-shadow: inset 0 0 0 1px rgba(167, 139, 250, 0.3);
+            background: rgba(139, 92, 246, 0.1);
+            box-shadow: inset 0 0 0 2px var(--accent-purple);
         }
 
-        /* Chinese Address Row */
+        .cell-input::placeholder {
+            color: var(--text-muted);
+        }
+
+        /* Address Row */
         .address-row {
-            background: #0a0a0a;
+            background: rgba(0, 0, 0, 0.4);
         }
 
         .address-row .data-cell {
-            font-size: 12px;
-            color: #888;
+            background: transparent;
         }
 
         .address-input {
             width: 100%;
             background: transparent;
             border: none;
-            color: #999;
+            color: var(--text-secondary);
             text-align: center;
             font-size: 12px;
-            padding: 10px 4px;
+            font-family: inherit;
+            padding: 12px 6px;
             transition: all 0.2s;
         }
 
         .address-input:focus {
             outline: none;
-            background: rgba(167, 139, 250, 0.08);
+            background: rgba(139, 92, 246, 0.08);
             color: #fff;
-            box-shadow: inset 0 0 0 1px rgba(167, 139, 250, 0.2);
         }
 
-        /* Status Indicators */
-        .with-icon {
+        /* ========== NOTES SECTION ========== */
+        .permanent-notes-section {
+            margin: 20px;
+            padding: 24px;
+            background: var(--bg-card);
+            backdrop-filter: blur(20px);
+            border: 1px solid var(--border-color);
+            border-radius: 20px;
+            box-shadow: 0 10px 50px rgba(0, 0, 0, 0.2);
+        }
+
+        .notes-label {
+            font-size: 14px;
+            color: var(--accent-green);
+            margin-bottom: 14px;
+            font-weight: 600;
             display: flex;
             align-items: center;
-            justify-content: center;
-            gap: 5px;
+            gap: 10px;
         }
 
-        /* Activity Log Dialog */
+        .notes-input {
+            width: 100%;
+            min-height: 120px;
+            background: rgba(0, 0, 0, 0.3);
+            border: 1px solid var(--border-color);
+            border-radius: 16px;
+            color: var(--text-primary);
+            font-size: 14px;
+            font-family: inherit;
+            padding: 18px;
+            resize: vertical;
+            line-height: 1.6;
+            -webkit-user-select: text;
+            user-select: text;
+            transition: all 0.3s;
+        }
+
+        .notes-input:focus {
+            outline: none;
+            border-color: var(--accent-green);
+            background: rgba(16, 185, 129, 0.05);
+            box-shadow: 0 0 0 4px rgba(16, 185, 129, 0.1);
+        }
+
+        .notes-input::placeholder {
+            color: var(--text-muted);
+        }
+
+        /* ========== DIALOGS ========== */
+        .overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0, 0, 0, 0.7);
+            backdrop-filter: blur(8px);
+            display: none;
+            z-index: 150;
+            opacity: 0;
+            transition: opacity 0.3s;
+        }
+
+        .overlay.show {
+            display: block;
+            opacity: 1;
+        }
+
+        .add-dialog {
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%) scale(0.9);
+            background: var(--bg-card);
+            backdrop-filter: blur(40px);
+            border: 1px solid var(--border-color);
+            border-radius: 28px;
+            padding: 35px;
+            display: none;
+            z-index: 200;
+            box-shadow:
+                0 25px 80px rgba(0, 0, 0, 0.5),
+                0 0 100px rgba(139, 92, 246, 0.1);
+            opacity: 0;
+            transition: all 0.3s ease;
+            min-width: 340px;
+        }
+
+        .add-dialog.show {
+            display: block;
+            opacity: 1;
+            transform: translate(-50%, -50%) scale(1);
+        }
+
+        .dialog-title {
+            font-size: 20px;
+            font-weight: 700;
+            margin-bottom: 24px;
+            text-align: center;
+            background: linear-gradient(135deg, #fff, rgba(255,255,255,0.7));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        .table-options {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 12px;
+            margin-bottom: 20px;
+        }
+
+        .table-option {
+            padding: 18px 12px;
+            background: rgba(255, 255, 255, 0.03);
+            border: 1px solid var(--border-color);
+            border-radius: 16px;
+            text-align: center;
+            cursor: pointer;
+            font-size: 18px;
+            font-weight: 700;
+            color: var(--text-primary);
+            transition: all 0.3s ease;
+        }
+
+        .table-option:hover {
+            background: rgba(139, 92, 246, 0.15);
+            border-color: var(--accent-purple);
+            transform: translateY(-3px);
+            box-shadow: 0 10px 30px rgba(139, 92, 246, 0.2);
+        }
+
+        .table-option:active {
+            transform: translateY(0);
+        }
+
+        .table-option.disabled {
+            opacity: 0.3;
+            cursor: not-allowed;
+            transform: none !important;
+            box-shadow: none !important;
+        }
+
+        .close-dialog {
+            width: 100%;
+            padding: 16px;
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid var(--border-color);
+            color: var(--text-secondary);
+            border-radius: 14px;
+            cursor: pointer;
+            font-weight: 600;
+            font-family: inherit;
+            font-size: 15px;
+            transition: all 0.3s;
+        }
+
+        .close-dialog:hover {
+            background: rgba(255, 255, 255, 0.1);
+            color: #fff;
+        }
+
+        /* ========== ACTIVITY LOG ========== */
         .activity-log-dialog {
             position: fixed;
             bottom: 0;
             left: 0;
             right: 0;
-            max-height: 60vh;
-            background: rgba(10, 10, 10, 0.95);
-            backdrop-filter: blur(10px);
-            border-top: 2px solid rgba(167, 139, 250, 0.3);
-            padding: 20px;
+            max-height: 65vh;
+            background: rgba(10, 10, 15, 0.95);
+            backdrop-filter: blur(30px);
+            border-top: 1px solid var(--accent-purple);
+            padding: 24px;
             overflow-y: auto;
             transform: translateY(100%);
-            transition: transform 0.3s ease-out;
+            transition: transform 0.4s cubic-bezier(0.4, 0, 0.2, 1);
             z-index: 95;
-            box-shadow: 0 -10px 30px rgba(0, 0, 0, 0.5);
+            box-shadow: 0 -20px 60px rgba(0, 0, 0, 0.5);
+            border-radius: 28px 28px 0 0;
         }
 
         .activity-log-dialog.show {
@@ -372,306 +670,76 @@
             display: flex;
             justify-content: space-between;
             align-items: center;
-            margin-bottom: 15px;
-            padding-bottom: 10px;
-            border-bottom: 1px solid #222;
+            margin-bottom: 20px;
+            padding-bottom: 16px;
+            border-bottom: 1px solid var(--border-color);
         }
 
         .activity-log-title {
-            font-size: 16px;
-            font-weight: bold;
-            color: #fff;
+            font-size: 18px;
+            font-weight: 700;
             display: flex;
             align-items: center;
-            gap: 8px;
+            gap: 10px;
+            background: linear-gradient(135deg, #fff, rgba(255,255,255,0.7));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
         }
 
         .close-log-btn {
-            background: #333;
-            border: none;
-            color: #fff;
-            width: 30px;
-            height: 30px;
-            border-radius: 50%;
-            font-size: 18px;
+            width: 40px;
+            height: 40px;
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid var(--border-color);
+            color: var(--text-secondary);
+            border-radius: 12px;
+            font-size: 20px;
             cursor: pointer;
             display: flex;
             align-items: center;
             justify-content: center;
+            transition: all 0.3s;
+        }
+
+        .close-log-btn:hover {
+            background: rgba(239, 68, 68, 0.1);
+            border-color: #ef4444;
+            color: #ef4444;
         }
 
         .log-entry {
-            font-size: 13px;
-            color: #ddd;
+            font-size: 14px;
+            color: var(--text-secondary);
             margin: 10px 0;
-            padding: 12px 16px;
-            background: rgba(255, 255, 255, 0.05);
-            border-left: 3px solid #4CAF50;
-            border-radius: 8px;
+            padding: 16px 20px;
+            background: rgba(255, 255, 255, 0.03);
+            border-left: 3px solid var(--accent-green);
+            border-radius: 12px;
             line-height: 1.5;
             transition: all 0.2s;
         }
 
         .log-entry:hover {
-            background: rgba(255, 255, 255, 0.08);
-            transform: translateX(2px);
+            background: rgba(255, 255, 255, 0.06);
+            transform: translateX(4px);
         }
 
         .log-entry .time {
-            color: #4CAF50;
-            font-weight: bold;
-            margin-right: 8px;
+            color: var(--accent-green);
+            font-weight: 700;
+            margin-right: 10px;
+            font-variant-numeric: tabular-nums;
         }
 
-        /* Add table dialog */
-        .add-dialog {
-            position: fixed;
-            top: 50%;
-            left: 50%;
-            transform: translate(-50%, -50%);
-            background: rgba(17, 17, 17, 0.95);
-            backdrop-filter: blur(10px);
-            border: 1px solid rgba(255, 255, 255, 0.1);
-            border-radius: 20px;
-            padding: 30px;
-            display: none;
-            z-index: 200;
-            box-shadow: 0 20px 50px rgba(0, 0, 0, 0.7);
-        }
-
-        .add-dialog.show {
-            display: block;
-        }
-
-        .dialog-title {
-            font-size: 18px;
-            margin-bottom: 15px;
-        }
-
-        .table-options {
-            display: grid;
-            grid-template-columns: repeat(3, 1fr);
-            gap: 10px;
-            margin-bottom: 15px;
-        }
-
-        .table-option {
-            padding: 15px;
-            background: rgba(255, 255, 255, 0.08);
-            border: 1px solid rgba(255, 255, 255, 0.1);
-            border-radius: 12px;
-            text-align: center;
-            cursor: pointer;
-            font-size: 18px;
-            font-weight: 600;
-            transition: all 0.3s;
-        }
-
-        .table-option:hover {
-            background: rgba(255, 255, 255, 0.12);
-            border-color: rgba(167, 139, 250, 0.3);
-            transform: translateY(-2px);
-            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.3);
-        }
-
-        .table-option:active {
-            transform: translateY(0);
-        }
-
-        .table-option.disabled {
-            opacity: 0.3;
-            cursor: not-allowed;
-            transform: none;
-        }
-
-        .close-dialog {
-            width: 100%;
-            padding: 12px;
-            background: rgba(255, 255, 255, 0.1);
-            border: 1px solid rgba(255, 255, 255, 0.1);
-            color: #fff;
-            border-radius: 12px;
-            cursor: pointer;
-            margin-top: 10px;
-            transition: all 0.3s;
-            font-weight: 500;
-        }
-
-        .close-dialog:hover {
-            background: rgba(255, 255, 255, 0.15);
-            border-color: rgba(255, 255, 255, 0.2);
-        }
-
-        /* Overlay */
-        .overlay {
-            position: fixed;
-            top: 0;
-            left: 0;
-            right: 0;
-            bottom: 0;
-            background: rgba(0, 0, 0, 0.7);
-            display: none;
-            z-index: 150;
-        }
-
-        .overlay.show {
-            display: block;
-        }
-
-        /* Permanent Notes Section */
-        .permanent-notes-section {
-            padding: 25px 20px;
-            background: rgba(17, 17, 17, 0.6);
-            backdrop-filter: blur(5px);
-            border-top: 1px solid rgba(255, 255, 255, 0.1);
-            margin-top: 20px;
-        }
-
-        .notes-label {
-            font-size: 14px;
-            color: #4CAF50;
-            margin-bottom: 10px;
-            font-weight: bold;
-            display: flex;
-            align-items: center;
-            gap: 8px;
-        }
-
-        .notes-input {
-            width: 100%;
-            min-height: 100px;
-            background: rgba(255, 255, 255, 0.05);
-            border: 1px solid rgba(255, 255, 255, 0.1);
-            border-radius: 12px;
-            color: #fff;
-            font-size: 14px;
-            padding: 16px;
-            font-family: inherit;
-            resize: vertical;
-            line-height: 1.5;
-            -webkit-user-select: text;
-            user-select: text;
-            transition: all 0.3s;
-        }
-
-        .notes-input:focus {
-            outline: none;
-            border-color: rgba(76, 175, 80, 0.5);
-            background: rgba(255, 255, 255, 0.08);
-            box-shadow: 0 0 0 3px rgba(76, 175, 80, 0.1);
-        }
-
-        .notes-input::placeholder {
-            color: #555;
-        }
-
-        /* Logout Confirmation Dialog - Glassmorphism */
-        .logout-dialog {
-            position: fixed;
-            top: 50%;
-            left: 50%;
-            transform: translate(-50%, -50%) scale(0.9);
-            background: rgba(20, 20, 30, 0.85);
-            backdrop-filter: blur(20px);
-            -webkit-backdrop-filter: blur(20px);
-            border: 1px solid rgba(255, 255, 255, 0.15);
-            border-radius: 24px;
-            padding: 35px 40px;
-            display: none;
-            z-index: 250;
-            box-shadow:
-                0 25px 50px rgba(0, 0, 0, 0.5),
-                0 0 0 1px rgba(255, 255, 255, 0.05) inset,
-                0 0 80px rgba(124, 58, 237, 0.15);
-            opacity: 0;
-            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-            min-width: 320px;
-            text-align: center;
-        }
-
-        .logout-dialog.show {
-            display: block;
-            opacity: 1;
-            transform: translate(-50%, -50%) scale(1);
-        }
-
-        .logout-dialog-icon {
-            font-size: 48px;
-            margin-bottom: 20px;
-            display: block;
-        }
-
-        .logout-dialog-title {
-            font-size: 20px;
-            font-weight: 600;
-            margin-bottom: 8px;
-            color: #fff;
-            background: linear-gradient(135deg, #a78bfa, #60a5fa);
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
-        }
-
-        .logout-dialog-subtitle {
-            font-size: 16px;
-            color: rgba(255, 255, 255, 0.7);
-            margin-bottom: 30px;
-        }
-
-        .logout-dialog-buttons {
-            display: flex;
-            gap: 15px;
-            justify-content: center;
-        }
-
-        .logout-btn {
-            flex: 1;
-            padding: 14px 24px;
-            border-radius: 14px;
-            font-size: 15px;
-            font-weight: 600;
-            cursor: pointer;
-            transition: all 0.3s;
-            border: none;
-            min-width: 120px;
-        }
-
-        .logout-btn-cancel {
-            background: rgba(255, 255, 255, 0.1);
-            border: 1px solid rgba(255, 255, 255, 0.15);
-            color: #fff;
-        }
-
-        .logout-btn-cancel:hover {
-            background: rgba(255, 255, 255, 0.15);
-            border-color: rgba(255, 255, 255, 0.25);
-            transform: translateY(-2px);
-        }
-
-        .logout-btn-confirm {
-            background: linear-gradient(135deg, #ef4444, #dc2626);
-            color: #fff;
-            box-shadow: 0 10px 25px rgba(239, 68, 68, 0.3);
-        }
-
-        .logout-btn-confirm:hover {
-            background: linear-gradient(135deg, #f87171, #ef4444);
-            transform: translateY(-2px);
-            box-shadow: 0 15px 30px rgba(239, 68, 68, 0.4);
-        }
-
-        .logout-btn:active {
-            transform: translateY(0) scale(0.98);
-        }
-
+        /* ========== LOGOUT DIALOG ========== */
         .logout-overlay {
             position: fixed;
             top: 0;
             left: 0;
             right: 0;
             bottom: 0;
-            background: rgba(0, 0, 0, 0.6);
-            backdrop-filter: blur(5px);
-            -webkit-backdrop-filter: blur(5px);
+            background: rgba(0, 0, 0, 0.7);
+            backdrop-filter: blur(10px);
             display: none;
             z-index: 240;
             opacity: 0;
@@ -683,41 +751,231 @@
             opacity: 1;
         }
 
-        /* Responsive adjustments */
+        .logout-dialog {
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%) scale(0.9);
+            background: var(--bg-card);
+            backdrop-filter: blur(40px);
+            border: 1px solid var(--border-color);
+            border-radius: 28px;
+            padding: 40px;
+            display: none;
+            z-index: 250;
+            box-shadow:
+                0 25px 80px rgba(0, 0, 0, 0.5),
+                0 0 100px rgba(239, 68, 68, 0.1);
+            opacity: 0;
+            transition: all 0.3s ease;
+            min-width: 340px;
+            text-align: center;
+        }
+
+        .logout-dialog.show {
+            display: block;
+            opacity: 1;
+            transform: translate(-50%, -50%) scale(1);
+        }
+
+        .logout-dialog-icon {
+            font-size: 56px;
+            margin-bottom: 20px;
+            display: block;
+            animation: doorWiggle 2s ease-in-out infinite;
+        }
+
+        @keyframes doorWiggle {
+            0%, 100% { transform: rotate(0deg); }
+            25% { transform: rotate(-5deg); }
+            75% { transform: rotate(5deg); }
+        }
+
+        .logout-dialog-title {
+            font-size: 22px;
+            font-weight: 700;
+            margin-bottom: 8px;
+            background: linear-gradient(135deg, #f87171, #ef4444);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        .logout-dialog-subtitle {
+            font-size: 16px;
+            color: var(--text-secondary);
+            margin-bottom: 30px;
+            line-height: 1.6;
+        }
+
+        .logout-dialog-buttons {
+            display: flex;
+            gap: 12px;
+        }
+
+        .logout-btn {
+            flex: 1;
+            padding: 16px 24px;
+            border-radius: 14px;
+            font-size: 15px;
+            font-weight: 600;
+            font-family: inherit;
+            cursor: pointer;
+            transition: all 0.3s;
+            border: none;
+        }
+
+        .logout-btn-cancel {
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid var(--border-color);
+            color: var(--text-secondary);
+        }
+
+        .logout-btn-cancel:hover {
+            background: rgba(255, 255, 255, 0.1);
+            color: #fff;
+            transform: translateY(-2px);
+        }
+
+        .logout-btn-confirm {
+            background: linear-gradient(135deg, #ef4444, #dc2626);
+            color: #fff;
+            box-shadow: 0 10px 30px rgba(239, 68, 68, 0.3);
+        }
+
+        .logout-btn-confirm:hover {
+            background: linear-gradient(135deg, #f87171, #ef4444);
+            transform: translateY(-2px);
+            box-shadow: 0 15px 40px rgba(239, 68, 68, 0.4);
+        }
+
+        .logout-btn:active {
+            transform: translateY(0) scale(0.98);
+        }
+
+        /* ========== RESPONSIVE ========== */
         @media (max-width: 768px) {
+            .login-box {
+                padding: 40px 28px;
+            }
+
+            .schedule-container {
+                padding: 12px;
+            }
+
             .schedule-cell {
                 font-size: 12px;
-                padding: 4px;
+                padding: 8px 5px;
             }
 
             .table-header .schedule-cell {
                 font-size: 14px;
+                padding: 14px 8px;
             }
 
             .time-cell {
                 font-size: 11px;
-                width: 45px;
+                width: 50px;
+            }
+
+            .cell-input {
+                font-size: 12px;
+                min-height: 44px;
             }
 
             .permanent-notes-section {
-                padding: 15px;
+                margin: 12px;
+                padding: 18px;
             }
 
-            .notes-input {
-                font-size: 13px;
-                min-height: 80px;
+            .header-btn {
+                width: 42px;
+                height: 42px;
+                font-size: 18px;
             }
+
+            .time-display-inner {
+                font-size: 36px;
+            }
+
+            .date-tabs {
+                padding: 12px;
+                gap: 6px;
+            }
+
+            .date-tab {
+                padding: 12px 8px;
+                font-size: 14px;
+            }
+        }
+
+        /* ========== SCROLLBAR ========== */
+        ::-webkit-scrollbar {
+            width: 8px;
+            height: 8px;
+        }
+
+        ::-webkit-scrollbar-track {
+            background: transparent;
+        }
+
+        ::-webkit-scrollbar-thumb {
+            background: rgba(255, 255, 255, 0.15);
+            border-radius: 4px;
+        }
+
+        ::-webkit-scrollbar-thumb:hover {
+            background: rgba(255, 255, 255, 0.25);
+        }
+
+        /* ========== LOADING STATE ========== */
+        .loading {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: var(--bg-primary);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 9999;
+        }
+
+        .loading-spinner {
+            width: 50px;
+            height: 50px;
+            border: 3px solid var(--border-color);
+            border-top-color: var(--accent-purple);
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
         }
     </style>
 </head>
 <body>
+    <div class="bg-gradient"></div>
+
     <!-- Login Screen -->
     <div class="login-screen" id="loginScreen">
         <div class="login-box">
-            <h1 class="login-title">上海排班系统</h1>
-            <input type="text" class="login-input" id="username" placeholder="用户名">
-            <input type="password" class="login-input" id="password" placeholder="密码">
-            <button class="login-button" onclick="login()">登录</button>
+            <div class="login-logo">🗓️</div>
+            <h1 class="login-title">Shanghai Schedule</h1>
+            <p class="login-subtitle">上海排班系统</p>
+
+            <div class="input-group">
+                <input type="text" class="login-input" id="username" placeholder="Username / 用户名">
+                <span class="input-icon">👤</span>
+            </div>
+
+            <div class="input-group">
+                <input type="password" class="login-input" id="password" placeholder="Password / 密码">
+                <span class="input-icon">🔒</span>
+            </div>
+
+            <button class="login-button" onclick="login()">Login / 登录</button>
             <div class="error-msg" id="errorMsg"></div>
         </div>
     </div>
@@ -726,21 +984,21 @@
     <div class="app-container" id="appContainer">
         <!-- Header -->
         <div class="header">
-            <div class="time-display">
-                <button class="header-btn" onclick="showDeleteDialog()" title="Удалить столбец">-</button>
-                <span class="time-display-inner" id="timeDisplay">13:18</span>
-                <button class="header-btn" onclick="showAddDialog()" title="Добавить столбец">+</button>
+            <div class="header-content">
+                <button class="header-btn" onclick="showDeleteDialog()" title="Удалить столбец">➖</button>
+                <span class="time-display-inner" id="timeDisplay">00:00</span>
+                <button class="header-btn" onclick="showAddDialog()" title="Добавить столбец">➕</button>
                 <button class="header-btn" onclick="toggleActivityLog()" title="Журнал действий">📋</button>
-                <button class="header-btn" onclick="showLogoutDialog()" title="Выход / 退出">🚪</button>
+                <button class="header-btn danger" onclick="showLogoutDialog()" title="Выход / 退出">🚪</button>
             </div>
-            <div class="date-display" id="dateDisplay">4 ноября 2025г. в 12:39 — общая</div>
+            <div class="date-display" id="dateDisplay"></div>
         </div>
 
         <!-- Date Tabs -->
         <div class="date-tabs">
-            <button class="date-tab active" onclick="switchDate(0)" id="tab0">4.11</button>
-            <button class="date-tab" onclick="switchDate(1)" id="tab1">5.11</button>
-            <button class="date-tab" onclick="switchDate(2)" id="tab2">6.11</button>
+            <button class="date-tab active" onclick="switchDate(0)" id="tab0">--</button>
+            <button class="date-tab" onclick="switchDate(1)" id="tab1">--</button>
+            <button class="date-tab" onclick="switchDate(2)" id="tab2">--</button>
         </div>
 
         <!-- Schedule Container -->
@@ -762,21 +1020,21 @@
                 <div class="table-option" onclick="addTable('北京1')">北京1</div>
                 <div class="table-option" onclick="addTable('北京2')">北京2</div>
             </div>
-            <button class="close-dialog" onclick="hideAddDialog()">取消</button>
+            <button class="close-dialog" onclick="hideAddDialog()">Cancel / 取消</button>
         </div>
 
         <!-- Delete Table Dialog -->
         <div class="add-dialog" id="deleteDialog">
-            <h3 class="dialog-title">Выберите столбец для удаления</h3>
+            <h3 class="dialog-title">选择要删除的桌台</h3>
             <div class="table-options" id="deleteOptions"></div>
-            <button class="close-dialog" onclick="hideDeleteDialog()">Отмена</button>
+            <button class="close-dialog" onclick="hideDeleteDialog()">Cancel / Отмена</button>
         </div>
 
         <!-- Activity Log Dialog -->
         <div class="activity-log-dialog" id="activityLogDialog">
             <div class="activity-log-header">
-                <div class="activity-log-title">📋 Журнал действий</div>
-                <button class="close-log-btn" onclick="toggleActivityLog()">×</button>
+                <div class="activity-log-title">📋 Activity Log / Журнал</div>
+                <button class="close-log-btn" onclick="toggleActivityLog()">✕</button>
             </div>
             <div id="activityLog"></div>
         </div>
@@ -785,11 +1043,11 @@
         <div class="logout-overlay" id="logoutOverlay" onclick="hideLogoutDialog()"></div>
         <div class="logout-dialog" id="logoutDialog">
             <span class="logout-dialog-icon">🚪</span>
-            <div class="logout-dialog-title">Выход / 退出</div>
-            <div class="logout-dialog-subtitle">Вы уверены?<br>你确定吗?</div>
+            <div class="logout-dialog-title">Logout / 退出</div>
+            <div class="logout-dialog-subtitle">Are you sure?<br>Вы уверены? / 你确定吗?</div>
             <div class="logout-dialog-buttons">
-                <button class="logout-btn logout-btn-cancel" onclick="hideLogoutDialog()">Нет / 不</button>
-                <button class="logout-btn logout-btn-confirm" onclick="confirmLogout()">Да / 是</button>
+                <button class="logout-btn logout-btn-cancel" onclick="hideLogoutDialog()">No / Нет</button>
+                <button class="logout-btn logout-btn-confirm" onclick="confirmLogout()">Yes / Да</button>
             </div>
         </div>
     </div>
@@ -831,7 +1089,7 @@
         let currentDate = 0;
         let scheduleData = {};
         let activityLog = [];
-        let activeDates = []; // CRITICAL: Fixed dates from server (prevents midnight auto-shift)
+        let activeDates = [];
 
         // Initialize
         document.addEventListener('DOMContentLoaded', () => {
@@ -839,22 +1097,20 @@
             startClock();
             loadFromServer();
 
-            // Enter key support
             document.getElementById('password').addEventListener('keypress', (e) => {
                 if (e.key === 'Enter') login();
             });
+            document.getElementById('username').addEventListener('keypress', (e) => {
+                if (e.key === 'Enter') document.getElementById('password').focus();
+            });
 
-            // Start auto-refresh
             startAutoRefresh();
         });
 
         function getNextThreeDates() {
             const dates = [];
-            // Use Shanghai time
             const now = new Date(new Date().toLocaleString("en-US", {timeZone: "Asia/Shanghai"}));
 
-            // CRITICAL: Day changes at 4:00 AM, not midnight!
-            // If it's before 4:00 AM, we're still in "yesterday"
             if (now.getHours() < 4) {
                 now.setDate(now.getDate() - 1);
             }
@@ -912,16 +1168,15 @@
                 document.getElementById('appContainer').style.display = 'block';
                 updateDateDisplay();
                 renderSchedule();
-                logActivity(`${username} вошел в систему`);
+                logActivity(`${username} logged in`);
             } else {
-                document.getElementById('errorMsg').textContent = '用户名或密码错误';
+                document.getElementById('errorMsg').textContent = 'Invalid credentials / 用户名或密码错误';
                 setTimeout(() => {
                     document.getElementById('errorMsg').textContent = '';
                 }, 3000);
             }
         }
 
-        // Load data from server (NO demo data, NO localStorage fallback)
         async function loadFromServer() {
             try {
                 const response = await fetch(`${API_BASE}/api/schedule`);
@@ -931,33 +1186,22 @@
 
                 const data = await response.json();
 
-                // Always use server data (even if empty)
                 scheduleData = data.scheduleData || {};
                 activityLog = data.activityLog || [];
-
-                // CRITICAL: Use fixed dates from server (prevents midnight auto-shift)
                 activeDates = data.activeDates || getNextThreeDates();
-                console.log('📅 Active dates from server:', activeDates.map(d => d.display).join(', '));
 
                 updateDateDisplay();
                 renderSchedule();
                 updateLogDisplay();
 
             } catch (error) {
-                console.error('❌ Failed to load from server:', error);
-                console.error('This is FATAL - cannot work without server!');
-                alert('⚠️ Не удалось подключиться к серверу!\n⚠️ 无法连接到服务器!');
+                console.error('Failed to load from server:', error);
+                alert('Connection error / Ошибка подключения');
             }
         }
 
-        // Save data to server
         async function saveToServer() {
             try {
-                console.log('📤 Saving data to server...', {
-                    tables: Object.keys(scheduleData).length,
-                    logs: activityLog.length
-                });
-
                 const response = await fetch(`${API_BASE}/api/schedule`, {
                     method: 'POST',
                     headers: {
@@ -966,21 +1210,18 @@
                     body: JSON.stringify({
                         scheduleData,
                         activityLog,
-                        user: currentUser  // Include current user for Telegram notifications
+                        user: currentUser
                     })
                 });
 
-                if (response.ok) {
-                    console.log('✅ Data saved to server successfully');
-                } else {
-                    console.error('❌ Server responded with error:', response.status);
+                if (!response.ok) {
+                    console.error('Server responded with error:', response.status);
                 }
             } catch (error) {
-                console.error('❌ Failed to save to server:', error);
+                console.error('Failed to save to server:', error);
             }
         }
 
-        // Auto-refresh from server
         function startAutoRefresh() {
             setInterval(async () => {
                 try {
@@ -988,10 +1229,8 @@
                     if (response.ok) {
                         const data = await response.json();
                         if (JSON.stringify(data.scheduleData) !== JSON.stringify(scheduleData)) {
-                            console.log('📥 Syncing data from server');
                             scheduleData = data.scheduleData;
                             activityLog = data.activityLog || [];
-
                             renderSchedule();
                             updateLogDisplay();
                         }
@@ -1003,77 +1242,56 @@
         }
 
         function updateDateDisplay() {
-            // Use fixed dates from server (prevents midnight auto-shift)
             const dates = activeDates.length > 0 ? activeDates : getNextThreeDates();
             document.getElementById('tab0').textContent = dates[0].display;
             document.getElementById('tab1').textContent = dates[1].display;
             document.getElementById('tab2').textContent = dates[2].display;
 
-            // Use Shanghai time
             const now = new Date(new Date().toLocaleString("en-US", {timeZone: "Asia/Shanghai"}));
-            const months = ['января', 'февраля', 'марта', 'апреля', 'мая', 'июня',
-                          'июля', 'августа', 'сентября', 'октября', 'ноября', 'декабря'];
-            const dateStr = `${now.getDate()} ${months[now.getMonth()]} ${now.getFullYear()}г. в ${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')} — общая`;
+            const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+            const dateStr = `${now.getDate()} ${months[now.getMonth()]} ${now.getFullYear()} — Shanghai Time`;
             document.getElementById('dateDisplay').textContent = dateStr;
         }
 
         function switchDate(index) {
             currentDate = index;
-
-            // Update active tab
             document.querySelectorAll('.date-tab').forEach(tab => tab.classList.remove('active'));
             document.getElementById(`tab${index}`).classList.add('active');
-
             renderSchedule();
         }
 
         function renderSchedule() {
             const container = document.getElementById('scheduleContainer');
-            if (!container) {
-                console.error('Schedule container not found');
-                return;
-            }
+            if (!container) return;
 
-            // Use fixed dates from server (prevents midnight auto-shift)
             const dates = activeDates.length > 0 ? activeDates : getNextThreeDates();
             const dateKey = dates[currentDate].key;
 
-            // Ensure data exists for current date
             if (!scheduleData[dateKey]) {
-                console.log(`Creating empty data for ${dateKey}`);
-                scheduleData[dateKey] = {
-                    tables: [],
-                    slots: {}
-                };
+                scheduleData[dateKey] = { tables: [], slots: {} };
             }
 
             const currentData = scheduleData[dateKey];
             const tables = currentData.tables || [];
 
-            console.log(`Rendering schedule for ${dateKey}:`, {
-                tables: tables,
-                hasSlots: !!currentData.slots
-            });
-
             let html = '<div class="schedule-grid">';
 
             // Header row
             html += '<div class="schedule-row table-header">';
-            html += '<div class="schedule-cell time-cell"></div>';
+            html += '<div class="schedule-cell time-cell">Time</div>';
             tables.forEach(table => {
                 html += `<div class="schedule-cell">${table}</div>`;
             });
             html += '</div>';
 
-            // Address row (synced across all days via sharedAddresses)
+            // Address row
             html += '<div class="schedule-row address-row">';
-            html += '<div class="schedule-cell time-cell"></div>';
+            html += '<div class="schedule-cell time-cell">📍</div>';
             tables.forEach(table => {
-                // Read from global sharedAddresses (synced across all days)
                 const address = escapeHtml(scheduleData.sharedAddresses?.[table] || '');
                 html += `<div class="schedule-cell data-cell">
                     <input type="text" class="address-input"
-                        placeholder="地址"
+                        placeholder="Address"
                         value="${address}"
                         onchange="updateAddress('${escapeHtml(table)}', this.value)">
                 </div>`;
@@ -1087,11 +1305,10 @@
 
                 tables.forEach(table => {
                     const value = currentData.slots?.[table]?.[time] || '';
-                    const isSpecial = value.includes('❌') || value.includes('⚽') || value.includes('✓');
                     const escapedValue = escapeHtml(value);
 
                     html += `<div class="schedule-cell data-cell">
-                        <input type="text" class="cell-input ${isSpecial ? 'with-icon' : ''}"
+                        <input type="text" class="cell-input"
                             value="${escapedValue}"
                             onchange="updateSlot('${escapeHtml(table)}', '${escapeHtml(time)}', this.value)"
                             onfocus="this.select()">
@@ -1103,13 +1320,12 @@
 
             html += '</div>';
 
-            // Add shared notes section (visible in ALL days, synced across all days)
-            // Get notes from global shared storage (not tied to specific date)
+            // Notes section
             const sharedNotes = escapeHtml(scheduleData.sharedNotes || '');
             html += `<div class="permanent-notes-section">
-                <div class="notes-label">📝 Общие заметки (синхронизированы во всех днях):</div>
+                <div class="notes-label">📝 Shared Notes / Общие заметки</div>
                 <textarea class="notes-input"
-                    placeholder="Введите важные заметки, они будут видны во всех днях..."
+                    placeholder="Important notes visible on all days..."
                     onchange="updateSharedNotes(this.value)"
                     onfocus="this.select()">${sharedNotes}</textarea>
             </div>`;
@@ -1117,20 +1333,16 @@
             container.innerHTML = html;
         }
 
-        // Update address (synced across all days via sharedAddresses)
         function updateAddress(table, value) {
-            // Save to global sharedAddresses storage (synced across all days)
             if (!scheduleData.sharedAddresses) {
                 scheduleData.sharedAddresses = {};
             }
-
             scheduleData.sharedAddresses[table] = value;
             saveToServer();
-            logActivity(`${currentUser} обновил адрес стола ${table}`);
+            logActivity(`${currentUser} updated address for ${table}`);
         }
 
         function updateSlot(table, time, value) {
-            // Use fixed dates from server (prevents midnight auto-shift)
             const dates = activeDates.length > 0 ? activeDates : getNextThreeDates();
             const dateKey = dates[currentDate].key;
 
@@ -1144,26 +1356,20 @@
             scheduleData[dateKey].slots[table][time] = value;
             saveToServer();
 
-            const action = value ? 'записал' : 'очистил';
-            logActivity(`${currentUser} ${action} ${time} для стола ${table}`);
+            const action = value ? 'set' : 'cleared';
+            logActivity(`${currentUser} ${action} ${time} for ${table}`);
         }
 
-        // Update shared notes (synced across all days)
         function updateSharedNotes(value) {
-            // Save to global shared notes storage (not tied to any specific date)
             scheduleData.sharedNotes = value;
             saveToServer();
-
-            const action = value ? 'обновил' : 'очистил';
-            logActivity(`${currentUser} ${action} общие заметки`);
+            logActivity(`${currentUser} updated shared notes`);
         }
 
         function showAddDialog() {
-            // Use fixed dates from server (prevents midnight auto-shift)
             const dates = activeDates.length > 0 ? activeDates : getNextThreeDates();
             const dateKey = dates[currentDate].key;
 
-            // Ensure data exists
             if (!scheduleData[dateKey]) {
                 scheduleData[dateKey] = { tables: [], slots: {} };
             }
@@ -1171,8 +1377,7 @@
             const currentData = scheduleData[dateKey];
             const existingTables = currentData.tables || [];
 
-            // Update available options
-            document.querySelectorAll('.table-option').forEach(option => {
+            document.querySelectorAll('#addDialog .table-option').forEach(option => {
                 const tableNum = option.textContent;
                 if (existingTables.includes(tableNum)) {
                     option.classList.add('disabled');
@@ -1193,7 +1398,6 @@
         }
 
         function addTable(tableNum) {
-            // Use fixed dates from server (prevents midnight auto-shift)
             const dates = activeDates.length > 0 ? activeDates : getNextThreeDates();
             const dateKey = dates[currentDate].key;
 
@@ -1203,7 +1407,6 @@
 
             if (!scheduleData[dateKey].tables.includes(tableNum)) {
                 scheduleData[dateKey].tables.push(tableNum);
-                // Sort: numeric tables first (111, 222...), then Chinese tables (北京1, 北京2...)
                 scheduleData[dateKey].tables.sort((a, b) => {
                     const aNum = parseInt(a);
                     const bNum = parseInt(b);
@@ -1218,57 +1421,24 @@
 
                 saveToServer();
                 renderSchedule();
-                logActivity(`${currentUser} добавил стол ${tableNum}`);
+                logActivity(`${currentUser} added table ${tableNum}`);
             }
 
             hideAddDialog();
         }
 
-        function toggleActivityLog() {
-            const dialog = document.getElementById('activityLogDialog');
-            dialog.classList.toggle('show');
-        }
-
-        function logActivity(message) {
-            // Use Shanghai time
-            const now = new Date(new Date().toLocaleString("en-US", {timeZone: "Asia/Shanghai"}));
-            const time = `${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}:${String(now.getSeconds()).padStart(2, '0')}`;
-
-            activityLog.unshift({
-                time: time,
-                message: message
-            });
-
-            if (activityLog.length > 50) {
-                activityLog = activityLog.slice(0, 50);
-            }
-
-            updateLogDisplay();
-        }
-
-        function updateLogDisplay() {
-            const logContainer = document.getElementById('activityLog');
-            logContainer.innerHTML = activityLog.map(entry =>
-                `<div class="log-entry"><span class="time">[${escapeHtml(entry.time)}]</span> ${escapeHtml(entry.message)}</div>`
-            ).join('');
-        }
-
-        // Delete dialog functions
         function showDeleteDialog() {
-            // Use fixed dates from server (prevents midnight auto-shift)
             const dates = activeDates.length > 0 ? activeDates : getNextThreeDates();
             const dateKey = dates[currentDate].key;
 
-            // Ensure data exists
             if (!scheduleData[dateKey]) {
                 scheduleData[dateKey] = { tables: [], slots: {} };
             }
 
-            const currentData = scheduleData[dateKey];
-            const existingTables = currentData.tables || [];
+            const existingTables = scheduleData[dateKey].tables || [];
 
             if (existingTables.length === 0) {
-                alert('Нет столбцов для удаления');
+                alert('No tables to delete');
                 return;
             }
 
@@ -1287,10 +1457,10 @@
         }
 
         function deleteTable(tableNum) {
-            // Use fixed dates from server (prevents midnight auto-shift)
             const dates = activeDates.length > 0 ? activeDates : getNextThreeDates();
             const dateKey = dates[currentDate].key;
-            if (confirm(`Удалить столбец ${tableNum}?`)) {
+
+            if (confirm(`Delete table ${tableNum}?`)) {
                 const index = scheduleData[dateKey].tables.indexOf(tableNum);
                 if (index > -1) {
                     scheduleData[dateKey].tables.splice(index, 1);
@@ -1301,14 +1471,39 @@
 
                     saveToServer();
                     renderSchedule();
-                    logActivity(`${currentUser} удалил стол ${tableNum}`);
+                    logActivity(`${currentUser} deleted table ${tableNum}`);
                 }
             }
 
             hideDeleteDialog();
         }
 
-        // Logout dialog functions
+        function toggleActivityLog() {
+            document.getElementById('activityLogDialog').classList.toggle('show');
+        }
+
+        function logActivity(message) {
+            const now = new Date(new Date().toLocaleString("en-US", {timeZone: "Asia/Shanghai"}));
+            const time = `${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}:${String(now.getSeconds()).padStart(2, '0')}`;
+
+            activityLog.unshift({ time, message });
+
+            if (activityLog.length > 50) {
+                activityLog = activityLog.slice(0, 50);
+            }
+
+            updateLogDisplay();
+        }
+
+        function updateLogDisplay() {
+            const logContainer = document.getElementById('activityLog');
+            if (!logContainer) return;
+
+            logContainer.innerHTML = activityLog.map(entry =>
+                `<div class="log-entry"><span class="time">[${escapeHtml(entry.time)}]</span> ${escapeHtml(entry.message)}</div>`
+            ).join('');
+        }
+
         function showLogoutDialog() {
             document.getElementById('logoutOverlay').classList.add('show');
             document.getElementById('logoutDialog').classList.add('show');
@@ -1320,7 +1515,7 @@
         }
 
         function confirmLogout() {
-            logActivity(`${currentUser} вышел из системы`);
+            logActivity(`${currentUser} logged out`);
             localStorage.removeItem('currentUser');
             currentUser = null;
             hideLogoutDialog();
@@ -1329,7 +1524,6 @@
             document.getElementById('username').value = '';
             document.getElementById('password').value = '';
         }
-
     </script>
 </body>
 </html>
