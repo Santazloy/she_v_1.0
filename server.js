@@ -408,7 +408,7 @@ async function callGPT(messages) {
         body: JSON.stringify({
             model: GPT_MODEL,
             messages: messages,
-            max_tokens: 2000,
+            max_completion_tokens: 2000,
             temperature: 0.7
         })
     });
