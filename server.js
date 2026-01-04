@@ -32,6 +32,31 @@ if (!TELEGRAM_BOT_TOKEN) {
 
 const bot = new TelegramBot(TELEGRAM_BOT_TOKEN, { polling: true });
 
+// OpenAI Configuration
+const OPENAI_API_KEY = process.env.OPENAI_API_KEY;
+const GPT_MODEL = 'gpt-5.2-pro'; // Самая мощная модель
+
+// Память чатов для GPT (30 сообщений на чат)
+const chatMemory = new Map();
+const MAX_MEMORY_MESSAGES = 30;
+
+// Системный промпт для GPT
+const GPT_SYSTEM_PROMPT = `Ты умный и полезный ассистент. Отвечай четко, структурированно и не слишком объёмно.
+
+ВАЖНО! Форматируй ответы по следующим правилам:
+1. Каждый заголовок раздела должен быть ЖИРНЫМ с эмодзи: <b>📌 Заголовок</b>
+2. Весь текст под заголовком оберни в <pre>текст</pre>
+3. Используй подходящие эмодзи для заголовков: 📌 💡 🔥 ⚡ 🎯 ✨ 📊 🛠 💎 🚀
+4. Если ответ содержит несколько частей - делай отдельный заголовок для каждой
+5. Будь лаконичен - не растягивай текст
+
+Пример формата:
+<b>🎯 Основная мысль</b>
+<pre>Краткое объяснение сути вопроса</pre>
+
+<b>💡 Решение</b>
+<pre>Конкретные шаги или ответ</pre>`;
+
 // Telegram chat IDs for each table
 const TELEGRAM_CHAT_IDS = {
     '000': '-1003456380758',
@@ -367,6 +392,121 @@ async function updateGroupBalance(chatId, amount, operation) {
 
     return newBalance;
 }
+
+// GPT Chat Functions
+async function callGPT(messages) {
+    if (!OPENAI_API_KEY) {
+        throw new Error('OpenAI API key not configured');
+    }
+
+    const response = await fetch('https://api.openai.com/v1/chat/completions', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${OPENAI_API_KEY}`
+        },
+        body: JSON.stringify({
+            model: GPT_MODEL,
+            messages: messages,
+            max_tokens: 2000,
+            temperature: 0.7
+        })
+    });
+
+    if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.error?.message || 'GPT API error');
+    }
+
+    const data = await response.json();
+    return data.choices[0].message.content;
+}
+
+// Получить или создать память чата
+function getChatMemory(chatId) {
+    if (!chatMemory.has(chatId)) {
+        chatMemory.set(chatId, []);
+    }
+    return chatMemory.get(chatId);
+}
+
+// Добавить сообщение в память
+function addToMemory(chatId, role, content) {
+    const memory = getChatMemory(chatId);
+    memory.push({ role, content });
+
+    // Ограничиваем до 30 сообщений
+    while (memory.length > MAX_MEMORY_MESSAGES) {
+        memory.shift();
+    }
+}
+
+// Очистить память чата
+function clearChatMemory(chatId) {
+    chatMemory.set(chatId, []);
+}
+
+// Обработчик команды /gpt
+bot.onText(/^\/gpt(?:\s+(.+))?$/s, async (msg, match) => {
+    const chatId = msg.chat.id.toString();
+    const userMessage = match[1]?.trim();
+
+    // Если команда без текста - показать справку
+    if (!userMessage) {
+        const helpMessage = `<b>🤖 GPT Ассистент</b>
+
+<pre>Использование:
+/gpt [ваш вопрос]
+
+Примеры:
+/gpt Что такое машинное обучение?
+/gpt Напиши код сортировки на Python
+
+/gpt clear - очистить историю диалога</pre>
+
+<b>💡 Модель:</b> <code>${GPT_MODEL}</code>
+<b>📝 Память:</b> <code>${MAX_MEMORY_MESSAGES} сообщений</code>`;
+
+        await sendTelegramNotification(chatId, helpMessage);
+        return;
+    }
+
+    // Команда очистки памяти
+    if (userMessage.toLowerCase() === 'clear') {
+        clearChatMemory(chatId);
+        await sendTelegramNotification(chatId, '🧹 <b>История диалога очищена!</b>');
+        return;
+    }
+
+    try {
+        // Отправляем "typing" статус
+        await bot.sendChatAction(chatId, 'typing');
+
+        // Добавляем сообщение пользователя в память
+        addToMemory(chatId, 'user', userMessage);
+
+        // Формируем сообщения для API
+        const messages = [
+            { role: 'system', content: GPT_SYSTEM_PROMPT },
+            ...getChatMemory(chatId)
+        ];
+
+        // Вызываем GPT
+        const response = await callGPT(messages);
+
+        // Добавляем ответ в память
+        addToMemory(chatId, 'assistant', response);
+
+        // Отправляем ответ
+        await sendTelegramNotification(chatId, response);
+
+        console.log(`[GPT] Response sent to chat ${chatId}`);
+
+    } catch (error) {
+        console.error('[GPT] Error:', error.message);
+        await sendTelegramNotification(chatId, `❌ <b>Ошибка GPT:</b>\n<pre>${error.message}</pre>`);
+    }
+});
 
 // Telegram bot message handler for balance groups
 bot.on('message', async (msg) => {
@@ -718,6 +858,7 @@ async function startServer() {
         console.log('✅ Balance tracking ENABLED for 5 groups (Alexa, Elizabeth, Mihail, Kris, Talia)');
         console.log('✅ Automatic daily reset at 4:00 AM Shanghai time');
         console.log('✅ NO file storage fallback - Supabase ONLY!');
+        console.log(`✅ GPT Chat ENABLED (model: ${GPT_MODEL}, memory: ${MAX_MEMORY_MESSAGES} messages)`);
     });
 }
 
