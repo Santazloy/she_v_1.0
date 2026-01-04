@@ -34,7 +34,7 @@ const bot = new TelegramBot(TELEGRAM_BOT_TOKEN, { polling: true });
 
 // OpenAI Configuration
 const OPENAI_API_KEY = process.env.OPENAI_API_KEY;
-const GPT_MODEL = 'gpt-5.2-pro'; // Самая мощная модель
+const GPT_MODEL = 'gpt-4o'; // Самая мощная chat модель
 
 // Память чатов для GPT (30 сообщений на чат)
 const chatMemory = new Map();
