@@ -832,6 +832,16 @@ app.get('/', (req, res, next) => {
     next();
 });
 
+// Block access to sensitive files
+app.use((req, res, next) => {
+    const blocked = ['.env', '.git', 'package.json', 'package-lock.json', 'node_modules'];
+    const path = req.path.toLowerCase();
+    if (blocked.some(file => path.includes(file))) {
+        return res.status(404).send('Not found');
+    }
+    next();
+});
+
 // Serve static files (must be after all API routes)
 app.use(express.static('.'));
 
