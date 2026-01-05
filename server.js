@@ -418,7 +418,11 @@ async function callGPT(messages) {
     }
 
     const data = await response.json();
-    return data.choices[0].message.content;
+    const content = data.choices?.[0]?.message?.content;
+    if (!content || content.trim() === '') {
+        throw new Error('GPT вернул пустой ответ');
+    }
+    return content;
 }
 
 // Получить или создать память чата
