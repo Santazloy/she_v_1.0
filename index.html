@@ -1124,6 +1124,7 @@
                 <button class="header-btn" onclick="showDeleteDialog()" title="Удалить столбец">➖</button>
                 <button class="header-btn" onclick="showAddDialog()" title="Добавить столбец">➕</button>
                 <span class="time-display-inner" id="timeDisplay">00:00</span>
+                <button class="header-btn" id="musicBtn" onclick="toggleMusic()" title="Музыка">🎵</button>
                 <button class="header-btn" onclick="toggleActivityLog()" title="Журнал действий">📋</button>
                 <button class="header-btn" id="tickerEditBtn" onclick="showTickerDialog()" title="Редактировать бегущую строку" style="display:none;">📝</button>
                 <button class="header-btn danger" onclick="showLogoutDialog()" title="Выход / 退出">🚪</button>
@@ -1203,6 +1204,11 @@
             <div class="ticker-content">
                 <span class="ticker-text" id="tickerText"></span>
             </div>
+        </div>
+
+        <!-- Hidden YouTube Player -->
+        <div id="youtubePlayerContainer" style="position:fixed;top:-9999px;left:-9999px;width:1px;height:1px;overflow:hidden;">
+            <div id="youtubePlayer"></div>
         </div>
     </div>
 
@@ -1717,6 +1723,103 @@
             hideTickerDialog();
             logActivity(`${currentUser} updated ticker text`);
         }
+
+        // YouTube Music Player
+        const PLAYLIST_ID = 'PLov1cMM7KGolDRlVkGuRK4-45Kgu5k9XM';
+        let ytPlayer = null;
+        let isPlaying = false;
+        let playerReady = false;
+
+        // Load YouTube IFrame API
+        function loadYouTubeAPI() {
+            if (window.YT) {
+                onYouTubeIframeAPIReady();
+                return;
+            }
+            const tag = document.createElement('script');
+            tag.src = 'https://www.youtube.com/iframe_api';
+            const firstScriptTag = document.getElementsByTagName('script')[0];
+            firstScriptTag.parentNode.insertBefore(tag, firstScriptTag);
+        }
+
+        // Called automatically when API is ready
+        window.onYouTubeIframeAPIReady = function() {
+            ytPlayer = new YT.Player('youtubePlayer', {
+                height: '1',
+                width: '1',
+                playerVars: {
+                    listType: 'playlist',
+                    list: PLAYLIST_ID,
+                    autoplay: 0,
+                    loop: 1,
+                    controls: 0,
+                    showinfo: 0,
+                    modestbranding: 1,
+                    playsinline: 1
+                },
+                events: {
+                    onReady: onPlayerReady,
+                    onStateChange: onPlayerStateChange,
+                    onError: onPlayerError
+                }
+            });
+        };
+
+        function onPlayerReady(event) {
+            playerReady = true;
+            ytPlayer.setVolume(50);
+            ytPlayer.setShuffle(true);
+            console.log('YouTube player ready');
+        }
+
+        function onPlayerStateChange(event) {
+            if (event.data === YT.PlayerState.PLAYING) {
+                isPlaying = true;
+                updateMusicButton();
+            } else if (event.data === YT.PlayerState.PAUSED || event.data === YT.PlayerState.ENDED) {
+                isPlaying = false;
+                updateMusicButton();
+            }
+        }
+
+        function onPlayerError(event) {
+            console.error('YouTube player error:', event.data);
+            isPlaying = false;
+            updateMusicButton();
+        }
+
+        function toggleMusic() {
+            if (!playerReady) {
+                loadYouTubeAPI();
+                setTimeout(() => {
+                    if (playerReady) toggleMusic();
+                }, 1000);
+                return;
+            }
+
+            if (isPlaying) {
+                ytPlayer.pauseVideo();
+                isPlaying = false;
+            } else {
+                ytPlayer.playVideo();
+                isPlaying = true;
+            }
+            updateMusicButton();
+        }
+
+        function updateMusicButton() {
+            const btn = document.getElementById('musicBtn');
+            if (btn) {
+                btn.textContent = isPlaying ? '🔊' : '🎵';
+                btn.style.background = isPlaying
+                    ? 'linear-gradient(135deg, rgba(139, 92, 246, 0.3), rgba(59, 130, 246, 0.3))'
+                    : 'rgba(255, 255, 255, 0.03)';
+                btn.style.borderColor = isPlaying ? 'var(--accent-purple)' : 'var(--border-color)';
+            }
+        }
+
+        // Initialize YouTube API on page load
+        loadYouTubeAPI();
     </script>
 </body>
 </html>
