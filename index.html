@@ -1729,33 +1729,39 @@
         let ytPlayer = null;
         let isPlaying = false;
         let playerReady = false;
+        let apiLoaded = false;
 
         // Load YouTube IFrame API
         function loadYouTubeAPI() {
-            if (window.YT) {
-                onYouTubeIframeAPIReady();
-                return;
-            }
+            if (apiLoaded) return;
+            apiLoaded = true;
+
             const tag = document.createElement('script');
             tag.src = 'https://www.youtube.com/iframe_api';
-            const firstScriptTag = document.getElementsByTagName('script')[0];
-            firstScriptTag.parentNode.insertBefore(tag, firstScriptTag);
+            document.head.appendChild(tag);
         }
 
         // Called automatically when API is ready
         window.onYouTubeIframeAPIReady = function() {
+            createPlayer();
+        };
+
+        function createPlayer() {
+            if (ytPlayer) return;
+
             ytPlayer = new YT.Player('youtubePlayer', {
-                height: '1',
-                width: '1',
+                height: '200',
+                width: '200',
                 playerVars: {
                     listType: 'playlist',
                     list: PLAYLIST_ID,
                     autoplay: 0,
                     loop: 1,
-                    controls: 0,
-                    showinfo: 0,
+                    controls: 1,
                     modestbranding: 1,
-                    playsinline: 1
+                    playsinline: 1,
+                    enablejsapi: 1,
+                    origin: window.location.origin
                 },
                 events: {
                     onReady: onPlayerReady,
@@ -1763,12 +1769,11 @@
                     onError: onPlayerError
                 }
             });
-        };
+        }
 
         function onPlayerReady(event) {
             playerReady = true;
-            ytPlayer.setVolume(50);
-            ytPlayer.setShuffle(true);
+            ytPlayer.setVolume(70);
             console.log('YouTube player ready');
         }
 
@@ -1777,6 +1782,10 @@
                 isPlaying = true;
                 updateMusicButton();
             } else if (event.data === YT.PlayerState.PAUSED || event.data === YT.PlayerState.ENDED) {
+                if (event.data === YT.PlayerState.ENDED) {
+                    // Auto play next
+                    ytPlayer.nextVideo();
+                }
                 isPlaying = false;
                 updateMusicButton();
             }
@@ -1784,33 +1793,54 @@
 
         function onPlayerError(event) {
             console.error('YouTube player error:', event.data);
-            isPlaying = false;
-            updateMusicButton();
+            // Try next video on error
+            if (ytPlayer) {
+                ytPlayer.nextVideo();
+            }
         }
 
         function toggleMusic() {
-            if (!playerReady) {
+            // Load API if not loaded
+            if (!apiLoaded) {
                 loadYouTubeAPI();
-                setTimeout(() => {
-                    if (playerReady) toggleMusic();
-                }, 1000);
+                updateMusicButton(true); // Show loading
                 return;
             }
 
-            if (isPlaying) {
-                ytPlayer.pauseVideo();
-                isPlaying = false;
-            } else {
-                ytPlayer.playVideo();
-                isPlaying = true;
+            // Create player if API loaded but player not created
+            if (window.YT && !ytPlayer) {
+                createPlayer();
+                updateMusicButton(true);
+                setTimeout(toggleMusic, 1500);
+                return;
             }
-            updateMusicButton();
+
+            // Wait for player to be ready
+            if (!playerReady) {
+                updateMusicButton(true);
+                setTimeout(toggleMusic, 1000);
+                return;
+            }
+
+            try {
+                if (isPlaying) {
+                    ytPlayer.pauseVideo();
+                } else {
+                    ytPlayer.playVideo();
+                }
+            } catch (e) {
+                console.error('Player error:', e);
+            }
         }
 
-        function updateMusicButton() {
+        function updateMusicButton(loading = false) {
             const btn = document.getElementById('musicBtn');
             if (btn) {
-                btn.textContent = isPlaying ? '🔊' : '🎵';
+                if (loading) {
+                    btn.textContent = '⏳';
+                } else {
+                    btn.textContent = isPlaying ? '🔊' : '🎵';
+                }
                 btn.style.background = isPlaying
                     ? 'linear-gradient(135deg, rgba(139, 92, 246, 0.3), rgba(59, 130, 246, 0.3))'
                     : 'rgba(255, 255, 255, 0.03)';
@@ -1818,7 +1848,7 @@
             }
         }
 
-        // Initialize YouTube API on page load
+        // Preload YouTube API
         loadYouTubeAPI();
     </script>
 </body>
