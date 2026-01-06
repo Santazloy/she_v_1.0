@@ -1063,6 +1063,202 @@
             padding-bottom: 70px;
         }
 
+        /* ========== MUSIC PLAYER MODAL ========== */
+        .music-modal {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0, 0, 0, 0.85);
+            backdrop-filter: blur(20px);
+            display: none;
+            z-index: 300;
+            opacity: 0;
+            transition: opacity 0.3s;
+        }
+
+        .music-modal.show {
+            display: flex;
+            flex-direction: column;
+            opacity: 1;
+        }
+
+        .music-player {
+            display: flex;
+            flex-direction: column;
+            height: 100%;
+            max-width: 600px;
+            margin: 0 auto;
+            width: 100%;
+        }
+
+        .music-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 20px;
+            border-bottom: 1px solid var(--border-color);
+        }
+
+        .music-title {
+            font-size: 20px;
+            font-weight: 700;
+            background: linear-gradient(135deg, #fff, rgba(255,255,255,0.7));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        .music-close {
+            width: 44px;
+            height: 44px;
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid var(--border-color);
+            color: var(--text-secondary);
+            border-radius: 12px;
+            font-size: 20px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.3s;
+        }
+
+        .music-close:hover {
+            background: rgba(239, 68, 68, 0.1);
+            border-color: #ef4444;
+            color: #ef4444;
+        }
+
+        .now-playing {
+            padding: 20px;
+            text-align: center;
+            border-bottom: 1px solid var(--border-color);
+        }
+
+        .now-playing-title {
+            font-size: 16px;
+            font-weight: 600;
+            color: #fff;
+            margin-bottom: 8px;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+        }
+
+        .now-playing-artist {
+            font-size: 13px;
+            color: var(--text-muted);
+        }
+
+        .music-controls {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 20px;
+            padding: 20px;
+            border-bottom: 1px solid var(--border-color);
+        }
+
+        .control-btn {
+            width: 50px;
+            height: 50px;
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid var(--border-color);
+            color: var(--text-primary);
+            border-radius: 50%;
+            font-size: 22px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.3s;
+        }
+
+        .control-btn:hover {
+            background: rgba(139, 92, 246, 0.2);
+            border-color: var(--accent-purple);
+            transform: scale(1.1);
+        }
+
+        .control-btn.play-btn {
+            width: 64px;
+            height: 64px;
+            background: linear-gradient(135deg, var(--accent-purple), var(--accent-blue));
+            border: none;
+            font-size: 28px;
+            box-shadow: 0 10px 30px var(--glow-purple);
+        }
+
+        .control-btn.play-btn:hover {
+            transform: scale(1.1);
+            box-shadow: 0 15px 40px var(--glow-purple);
+        }
+
+        .playlist-container {
+            flex: 1;
+            overflow-y: auto;
+            padding: 10px;
+        }
+
+        .playlist-item {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding: 12px;
+            border-radius: 12px;
+            cursor: pointer;
+            transition: all 0.2s;
+            margin-bottom: 4px;
+        }
+
+        .playlist-item:hover {
+            background: rgba(255, 255, 255, 0.05);
+        }
+
+        .playlist-item.active {
+            background: linear-gradient(135deg, rgba(139, 92, 246, 0.2), rgba(59, 130, 246, 0.2));
+            border: 1px solid var(--accent-purple);
+        }
+
+        .playlist-thumb {
+            width: 48px;
+            height: 48px;
+            border-radius: 8px;
+            object-fit: cover;
+            background: var(--bg-secondary);
+        }
+
+        .playlist-info {
+            flex: 1;
+            overflow: hidden;
+        }
+
+        .playlist-item-title {
+            font-size: 14px;
+            font-weight: 500;
+            color: #fff;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+        }
+
+        .playlist-item-artist {
+            font-size: 12px;
+            color: var(--text-muted);
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+        }
+
+        .playlist-loading {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 40px;
+            color: var(--text-muted);
+        }
+
         /* ========== LOADING STATE ========== */
         .loading {
             position: fixed;
@@ -1209,6 +1405,28 @@
         <!-- Hidden YouTube Player -->
         <div id="youtubePlayerContainer" style="position:fixed;top:-9999px;left:-9999px;width:1px;height:1px;overflow:hidden;">
             <div id="youtubePlayer"></div>
+        </div>
+
+        <!-- Music Player Modal -->
+        <div class="music-modal" id="musicModal">
+            <div class="music-player">
+                <div class="music-header">
+                    <span class="music-title">🎵 Music Player</span>
+                    <button class="music-close" onclick="closeMusicModal()">✕</button>
+                </div>
+                <div class="now-playing">
+                    <div class="now-playing-title" id="nowPlayingTitle">Выберите трек</div>
+                    <div class="now-playing-artist" id="nowPlayingArtist"></div>
+                </div>
+                <div class="music-controls">
+                    <button class="control-btn" onclick="prevTrack()">⏮</button>
+                    <button class="control-btn play-btn" id="playPauseBtn" onclick="togglePlayPause()">▶</button>
+                    <button class="control-btn" onclick="nextTrack()">⏭</button>
+                </div>
+                <div class="playlist-container" id="playlistContainer">
+                    <div class="playlist-loading">Загрузка плейлиста...</div>
+                </div>
+            </div>
         </div>
     </div>
 
@@ -1725,130 +1943,140 @@
         }
 
         // YouTube Music Player
-        const PLAYLIST_ID = 'PLov1cMM7KGolDRlVkGuRK4-45Kgu5k9XM';
         let ytPlayer = null;
         let isPlaying = false;
         let playerReady = false;
         let apiLoaded = false;
+        let playlist = [];
+        let currentTrackIndex = -1;
 
         // Load YouTube IFrame API
         function loadYouTubeAPI() {
             if (apiLoaded) return;
             apiLoaded = true;
-
             const tag = document.createElement('script');
             tag.src = 'https://www.youtube.com/iframe_api';
             document.head.appendChild(tag);
         }
 
-        // Called automatically when API is ready
         window.onYouTubeIframeAPIReady = function() {
-            createPlayer();
+            playerReady = false;
+            console.log('YouTube API ready');
         };
 
-        function createPlayer() {
-            if (ytPlayer) return;
-
+        function createPlayerForVideo(videoId) {
+            if (ytPlayer) {
+                ytPlayer.destroy();
+            }
             ytPlayer = new YT.Player('youtubePlayer', {
-                height: '200',
-                width: '200',
+                height: '1',
+                width: '1',
+                videoId: videoId,
                 playerVars: {
-                    listType: 'playlist',
-                    list: PLAYLIST_ID,
-                    autoplay: 0,
-                    loop: 1,
-                    controls: 1,
+                    autoplay: 1,
+                    controls: 0,
                     modestbranding: 1,
                     playsinline: 1,
-                    enablejsapi: 1,
-                    origin: window.location.origin
+                    enablejsapi: 1
                 },
                 events: {
-                    onReady: onPlayerReady,
+                    onReady: (e) => { playerReady = true; e.target.setVolume(70); e.target.playVideo(); },
                     onStateChange: onPlayerStateChange,
-                    onError: onPlayerError
+                    onError: () => nextTrack()
                 }
             });
-        }
-
-        function onPlayerReady(event) {
-            playerReady = true;
-            ytPlayer.setVolume(70);
-            console.log('YouTube player ready');
         }
 
         function onPlayerStateChange(event) {
             if (event.data === YT.PlayerState.PLAYING) {
                 isPlaying = true;
-                updateMusicButton();
-            } else if (event.data === YT.PlayerState.PAUSED || event.data === YT.PlayerState.ENDED) {
-                if (event.data === YT.PlayerState.ENDED) {
-                    // Auto play next
-                    ytPlayer.nextVideo();
-                }
+                updateMusicUI();
+            } else if (event.data === YT.PlayerState.PAUSED) {
                 isPlaying = false;
-                updateMusicButton();
-            }
-        }
-
-        function onPlayerError(event) {
-            console.error('YouTube player error:', event.data);
-            // Try next video on error
-            if (ytPlayer) {
-                ytPlayer.nextVideo();
+                updateMusicUI();
+            } else if (event.data === YT.PlayerState.ENDED) {
+                nextTrack();
             }
         }
 
         function toggleMusic() {
-            // Load API if not loaded
-            if (!apiLoaded) {
-                loadYouTubeAPI();
-                updateMusicButton(true); // Show loading
-                return;
-            }
+            document.getElementById('musicModal').classList.add('show');
+            if (playlist.length === 0) loadPlaylist();
+        }
 
-            // Create player if API loaded but player not created
-            if (window.YT && !ytPlayer) {
-                createPlayer();
-                updateMusicButton(true);
-                setTimeout(toggleMusic, 1500);
-                return;
-            }
+        function closeMusicModal() {
+            document.getElementById('musicModal').classList.remove('show');
+        }
 
-            // Wait for player to be ready
-            if (!playerReady) {
-                updateMusicButton(true);
-                setTimeout(toggleMusic, 1000);
-                return;
-            }
-
+        async function loadPlaylist() {
             try {
-                if (isPlaying) {
-                    ytPlayer.pauseVideo();
-                } else {
-                    ytPlayer.playVideo();
+                const res = await fetch(`${API_BASE}/api/playlist`);
+                const data = await res.json();
+                if (data.tracks) {
+                    playlist = data.tracks;
+                    renderPlaylist();
                 }
             } catch (e) {
-                console.error('Player error:', e);
+                document.getElementById('playlistContainer').innerHTML = '<div class="playlist-loading">Ошибка загрузки</div>';
             }
         }
 
-        function updateMusicButton(loading = false) {
-            const btn = document.getElementById('musicBtn');
-            if (btn) {
-                if (loading) {
-                    btn.textContent = '⏳';
-                } else {
-                    btn.textContent = isPlaying ? '🔊' : '🎵';
-                }
-                btn.style.background = isPlaying
-                    ? 'linear-gradient(135deg, rgba(139, 92, 246, 0.3), rgba(59, 130, 246, 0.3))'
-                    : 'rgba(255, 255, 255, 0.03)';
-                btn.style.borderColor = isPlaying ? 'var(--accent-purple)' : 'var(--border-color)';
+        function renderPlaylist() {
+            const container = document.getElementById('playlistContainer');
+            if (playlist.length === 0) {
+                container.innerHTML = '<div class="playlist-loading">Плейлист пуст</div>';
+                return;
+            }
+            container.innerHTML = playlist.map((track, i) => `
+                <div class="playlist-item ${i === currentTrackIndex ? 'active' : ''}" onclick="playTrack(${i})">
+                    <img class="playlist-thumb" src="${track.thumbnail}" alt="">
+                    <div class="playlist-info">
+                        <div class="playlist-item-title">${escapeHtml(track.title)}</div>
+                        <div class="playlist-item-artist">${escapeHtml(track.channel)}</div>
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        function playTrack(index) {
+            if (!window.YT) { loadYouTubeAPI(); setTimeout(() => playTrack(index), 1000); return; }
+            currentTrackIndex = index;
+            const track = playlist[index];
+            document.getElementById('nowPlayingTitle').textContent = track.title;
+            document.getElementById('nowPlayingArtist').textContent = track.channel;
+            createPlayerForVideo(track.id);
+            renderPlaylist();
+        }
+
+        function togglePlayPause() {
+            if (!ytPlayer) { if (playlist.length > 0) playTrack(0); return; }
+            if (isPlaying) ytPlayer.pauseVideo(); else ytPlayer.playVideo();
+        }
+
+        function prevTrack() {
+            if (playlist.length === 0) return;
+            currentTrackIndex = (currentTrackIndex - 1 + playlist.length) % playlist.length;
+            playTrack(currentTrackIndex);
+        }
+
+        function nextTrack() {
+            if (playlist.length === 0) return;
+            currentTrackIndex = (currentTrackIndex + 1) % playlist.length;
+            playTrack(currentTrackIndex);
+        }
+
+        function updateMusicUI() {
+            const btn = document.getElementById('playPauseBtn');
+            if (btn) btn.textContent = isPlaying ? '⏸' : '▶';
+            const headerBtn = document.getElementById('musicBtn');
+            if (headerBtn) {
+                headerBtn.textContent = isPlaying ? '🔊' : '🎵';
+                headerBtn.style.background = isPlaying ? 'linear-gradient(135deg, rgba(139, 92, 246, 0.3), rgba(59, 130, 246, 0.3))' : '';
             }
         }
 
-        // Preload YouTube API
+        function updateMusicButton() { updateMusicUI(); }
+
         loadYouTubeAPI();
     </script>
 </body>

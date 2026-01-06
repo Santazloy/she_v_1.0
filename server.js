@@ -36,6 +36,10 @@ const bot = new TelegramBot(TELEGRAM_BOT_TOKEN, { polling: true });
 const OPENAI_API_KEY = process.env.OPENAI_API_KEY;
 const GPT_MODEL = 'gpt-5'; // Самая мощная модель
 
+// YouTube API Configuration
+const YOUTUBE_API_KEY = process.env.YOUTUBE_API_KEY;
+const YOUTUBE_PLAYLIST_ID = 'PLov1cMM7KGolDRlVkGuRK4-45Kgu5k9XM';
+
 // Память чатов для GPT (30 сообщений на чат)
 const chatMemory = new Map();
 const MAX_MEMORY_MESSAGES = 30;
@@ -626,6 +630,51 @@ app.post('/api/activity', async (req, res) => {
     }
 });
 
+// Get YouTube playlist tracks
+app.get('/api/playlist', async (req, res) => {
+    try {
+        if (!YOUTUBE_API_KEY) {
+            return res.status(500).json({ error: 'YouTube API key not configured' });
+        }
+
+        const tracks = [];
+        let nextPageToken = '';
+
+        // Fetch all pages of playlist items
+        do {
+            const url = `https://www.googleapis.com/youtube/v3/playlistItems?part=snippet&maxResults=50&playlistId=${YOUTUBE_PLAYLIST_ID}&key=${YOUTUBE_API_KEY}${nextPageToken ? `&pageToken=${nextPageToken}` : ''}`;
+
+            const response = await fetch(url);
+            const data = await response.json();
+
+            if (data.error) {
+                console.error('YouTube API error:', data.error);
+                return res.status(500).json({ error: data.error.message });
+            }
+
+            if (data.items) {
+                data.items.forEach(item => {
+                    if (item.snippet && item.snippet.resourceId) {
+                        tracks.push({
+                            id: item.snippet.resourceId.videoId,
+                            title: item.snippet.title,
+                            thumbnail: item.snippet.thumbnails?.default?.url || '',
+                            channel: item.snippet.videoOwnerChannelTitle || ''
+                        });
+                    }
+                });
+            }
+
+            nextPageToken = data.nextPageToken || '';
+        } while (nextPageToken);
+
+        console.log(`[YouTube] Loaded ${tracks.length} tracks from playlist`);
+        res.json({ tracks });
+    } catch (error) {
+        console.error('Error fetching playlist:', error);
+        res.status(500).json({ error: 'Failed to fetch playlist' });
+    }
+});
 
 // Get next three dates helper
 function getNextThreeDates() {
