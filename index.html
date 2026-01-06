@@ -927,6 +927,142 @@
             background: rgba(255, 255, 255, 0.25);
         }
 
+        /* ========== BOTTOM TICKER BAR ========== */
+        .ticker-bar {
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            height: 50px;
+            background: linear-gradient(135deg, rgba(139, 92, 246, 0.2), rgba(59, 130, 246, 0.2));
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            border-top: 1px solid var(--accent-purple);
+            display: flex;
+            align-items: center;
+            z-index: 100;
+            overflow: hidden;
+            box-shadow: 0 -5px 30px rgba(139, 92, 246, 0.15);
+        }
+
+        .ticker-content {
+            flex: 1;
+            overflow: hidden;
+            white-space: nowrap;
+        }
+
+        .ticker-text {
+            display: inline-block;
+            padding-left: 100%;
+            animation: ticker 20s linear infinite;
+            color: #fff;
+            font-size: 15px;
+            font-weight: 500;
+            text-shadow: 0 0 10px rgba(255, 255, 255, 0.3);
+        }
+
+        .ticker-text:empty {
+            animation: none;
+        }
+
+        @keyframes ticker {
+            0% { transform: translateX(0); }
+            100% { transform: translateX(-100%); }
+        }
+
+        /* ========== TICKER EDIT DIALOG ========== */
+        .ticker-dialog {
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%) scale(0.9);
+            background: var(--bg-card);
+            backdrop-filter: blur(40px);
+            -webkit-backdrop-filter: blur(40px);
+            border: 1px solid var(--border-color);
+            border-radius: 28px;
+            padding: 35px;
+            display: none;
+            z-index: 200;
+            box-shadow:
+                0 25px 80px rgba(0, 0, 0, 0.5),
+                0 0 100px rgba(139, 92, 246, 0.1);
+            opacity: 0;
+            transition: all 0.3s ease;
+            min-width: 340px;
+            max-width: 90vw;
+        }
+
+        .ticker-dialog.show {
+            display: block;
+            opacity: 1;
+            transform: translate(-50%, -50%) scale(1);
+        }
+
+        .ticker-input {
+            width: 100%;
+            padding: 18px;
+            background: rgba(255, 255, 255, 0.03);
+            border: 1px solid var(--border-color);
+            color: var(--text-primary);
+            font-size: 16px;
+            font-family: inherit;
+            border-radius: 16px;
+            margin-bottom: 20px;
+            transition: all 0.3s ease;
+        }
+
+        .ticker-input:focus {
+            outline: none;
+            border-color: var(--accent-purple);
+            background: rgba(139, 92, 246, 0.05);
+            box-shadow: 0 0 0 4px rgba(139, 92, 246, 0.1);
+        }
+
+        .ticker-buttons {
+            display: flex;
+            gap: 12px;
+        }
+
+        .ticker-btn {
+            flex: 1;
+            padding: 16px;
+            border-radius: 14px;
+            font-size: 15px;
+            font-weight: 600;
+            font-family: inherit;
+            cursor: pointer;
+            transition: all 0.3s;
+            border: none;
+        }
+
+        .ticker-btn-save {
+            background: linear-gradient(135deg, var(--accent-purple), var(--accent-blue));
+            color: #fff;
+            box-shadow: 0 10px 30px var(--glow-purple);
+        }
+
+        .ticker-btn-save:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 15px 40px var(--glow-purple);
+        }
+
+        .ticker-btn-cancel {
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid var(--border-color);
+            color: var(--text-secondary);
+        }
+
+        .ticker-btn-cancel:hover {
+            background: rgba(255, 255, 255, 0.1);
+            color: #fff;
+        }
+
+        /* Add padding to schedule container for ticker bar */
+        .schedule-container {
+            padding-bottom: 70px;
+        }
+
         /* ========== LOADING STATE ========== */
         .loading {
             position: fixed;
@@ -986,9 +1122,10 @@
         <div class="header">
             <div class="header-content">
                 <button class="header-btn" onclick="showDeleteDialog()" title="Удалить столбец">➖</button>
-                <span class="time-display-inner" id="timeDisplay">00:00</span>
                 <button class="header-btn" onclick="showAddDialog()" title="Добавить столбец">➕</button>
+                <span class="time-display-inner" id="timeDisplay">00:00</span>
                 <button class="header-btn" onclick="toggleActivityLog()" title="Журнал действий">📋</button>
+                <button class="header-btn" id="tickerEditBtn" onclick="showTickerDialog()" title="Редактировать бегущую строку" style="display:none;">📝</button>
                 <button class="header-btn danger" onclick="showLogoutDialog()" title="Выход / 退出">🚪</button>
             </div>
             <div class="date-display" id="dateDisplay"></div>
@@ -1048,6 +1185,23 @@
             <div class="logout-dialog-buttons">
                 <button class="logout-btn logout-btn-cancel" onclick="hideLogoutDialog()">No / Нет</button>
                 <button class="logout-btn logout-btn-confirm" onclick="confirmLogout()">Yes / Да</button>
+            </div>
+        </div>
+
+        <!-- Ticker Edit Dialog -->
+        <div class="ticker-dialog" id="tickerDialog">
+            <h3 class="dialog-title">📝 Бегущая строка</h3>
+            <input type="text" class="ticker-input" id="tickerInput" placeholder="Введите текст для бегущей строки...">
+            <div class="ticker-buttons">
+                <button class="ticker-btn ticker-btn-cancel" onclick="hideTickerDialog()">Отмена</button>
+                <button class="ticker-btn ticker-btn-save" onclick="saveTickerText()">Сохранить</button>
+            </div>
+        </div>
+
+        <!-- Bottom Ticker Bar -->
+        <div class="ticker-bar">
+            <div class="ticker-content">
+                <span class="ticker-text" id="tickerText"></span>
             </div>
         </div>
     </div>
@@ -1154,6 +1308,7 @@
                 document.getElementById('appContainer').style.display = 'block';
                 updateDateDisplay();
                 renderSchedule();
+                updateTickerEditButton();
             }
         }
 
@@ -1168,6 +1323,7 @@
                 document.getElementById('appContainer').style.display = 'block';
                 updateDateDisplay();
                 renderSchedule();
+                updateTickerEditButton();
                 logActivity(`${username} logged in`);
             } else {
                 document.getElementById('errorMsg').textContent = 'Invalid credentials / 用户名或密码错误';
@@ -1320,17 +1476,10 @@
 
             html += '</div>';
 
-            // Notes section
-            const sharedNotes = escapeHtml(scheduleData.sharedNotes || '');
-            html += `<div class="permanent-notes-section">
-                <div class="notes-label">📝 Shared Notes / Общие заметки</div>
-                <textarea class="notes-input"
-                    placeholder="Important notes visible on all days..."
-                    onchange="updateSharedNotes(this.value)"
-                    onfocus="this.select()">${sharedNotes}</textarea>
-            </div>`;
-
             container.innerHTML = html;
+
+            // Update ticker text
+            updateTickerDisplay();
         }
 
         function updateAddress(table, value) {
@@ -1523,6 +1672,50 @@
             document.getElementById('loginScreen').style.display = 'flex';
             document.getElementById('username').value = '';
             document.getElementById('password').value = '';
+            document.getElementById('tickerEditBtn').style.display = 'none';
+        }
+
+        // Ticker functions
+        function canEditTicker() {
+            return currentUser === 'kris' || currentUser === 'lion';
+        }
+
+        function updateTickerEditButton() {
+            const btn = document.getElementById('tickerEditBtn');
+            if (btn) {
+                btn.style.display = canEditTicker() ? 'flex' : 'none';
+            }
+        }
+
+        function updateTickerDisplay() {
+            const tickerEl = document.getElementById('tickerText');
+            if (tickerEl && scheduleData.tickerText) {
+                tickerEl.textContent = scheduleData.tickerText;
+            } else if (tickerEl) {
+                tickerEl.textContent = '';
+            }
+        }
+
+        function showTickerDialog() {
+            if (!canEditTicker()) return;
+            document.getElementById('tickerInput').value = scheduleData.tickerText || '';
+            document.getElementById('overlay').classList.add('show');
+            document.getElementById('tickerDialog').classList.add('show');
+            document.getElementById('tickerInput').focus();
+        }
+
+        function hideTickerDialog() {
+            document.getElementById('overlay').classList.remove('show');
+            document.getElementById('tickerDialog').classList.remove('show');
+        }
+
+        function saveTickerText() {
+            const newText = document.getElementById('tickerInput').value;
+            scheduleData.tickerText = newText;
+            saveToServer();
+            updateTickerDisplay();
+            hideTickerDialog();
+            logActivity(`${currentUser} updated ticker text`);
         }
     </script>
 </body>
