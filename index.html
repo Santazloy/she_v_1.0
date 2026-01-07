@@ -1437,11 +1437,23 @@
                         <path fill-rule="evenodd" clip-rule="evenodd" d="M15 1H1V15H15V1ZM7 4H9V7H12V9H9V12H7V9H4V7H7V4Z"/>
                     </svg>
                 </button>
-                <button class="header-btn" id="musicBtn" onclick="toggleMusic()" title="Музыка">🎵</button>
+                <button class="header-btn" id="musicBtn" onclick="toggleMusic()" title="Музыка">
+                    <svg viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
+                        <path d="M15 1H4V9H3C1.34315 9 0 10.3431 0 12C0 13.6569 1.34315 15 3 15C4.65685 15 6 13.6569 6 12V5H13V9H12C10.3431 9 9 10.3431 9 12C9 13.6569 10.3431 15 12 15C13.6569 15 15 13.6569 15 12V1Z"/>
+                    </svg>
+                </button>
                 <span class="time-display-inner" id="timeDisplay">00:00</span>
-                <button class="escort-btn" onclick="window.location.href='https://eurogirlsshanghai.com'">escort</button>
+                <button class="header-btn" onclick="window.location.href='https://eurogirlsshanghai.com'" title="Escort">
+                    <svg viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
+                        <path fill-rule="evenodd" clip-rule="evenodd" d="M13 7C13 9.41896 11.2822 11.4367 9 11.9V14H12V16H4V14H7V11.9C4.71776 11.4367 3 9.41896 3 7V6.89072C3 6.63062 3.01986 6.3709 3.05941 6.11382L4 0H12L12.9406 6.11382C12.9801 6.3709 13 6.63062 13 6.89072V7ZM5.2543 5H10.7457L10.2842 2H5.71584L5.2543 5Z"/>
+                    </svg>
+                </button>
                 <div class="menu-container">
-                    <button class="header-btn" onclick="toggleMenu()" title="Меню">☰</button>
+                    <button class="header-btn" onclick="toggleMenu()" title="Меню">
+                        <svg viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
+                            <path fill-rule="evenodd" clip-rule="evenodd" d="M6.50001 0H9.50001L10.0939 2.37548C10.7276 2.6115 11.3107 2.95155 11.8223 3.37488L14.1782 2.70096L15.6782 5.29904L13.9173 7.00166C13.9717 7.32634 14 7.65987 14 8C14 8.34013 13.9717 8.67366 13.9173 8.99834L15.6782 10.701L14.1782 13.299L11.8223 12.6251C11.3107 13.0484 10.7276 13.3885 10.0939 13.6245L9.50001 16H6.50001L5.90614 13.6245C5.27242 13.3885 4.68934 13.0484 4.17768 12.6251L1.82181 13.299L0.321808 10.701L2.08269 8.99834C2.02831 8.67366 2.00001 8.34013 2.00001 8C2.00001 7.65987 2.02831 7.32634 2.08269 7.00166L0.321808 5.29904L1.82181 2.70096L4.17768 3.37488C4.68934 2.95155 5.27241 2.6115 5.90614 2.37548L6.50001 0ZM8.00001 10C9.10458 10 10 9.10457 10 8C10 6.89543 9.10458 6 8.00001 6C6.89544 6 6.00001 6.89543 6.00001 8C6.00001 9.10457 6.89544 10 8.00001 10Z"/>
+                        </svg>
+                    </button>
                     <div class="menu-dropdown" id="menuDropdown">
                         <button class="menu-item" onclick="toggleActivityLog(); closeMenu()">
                             <span class="menu-item-icon">📋</span> Журнал
@@ -2218,7 +2230,6 @@
             if (btn) btn.textContent = isPlaying ? '⏸' : '▶';
             const headerBtn = document.getElementById('musicBtn');
             if (headerBtn) {
-                headerBtn.textContent = isPlaying ? '🔊' : '🎵';
                 headerBtn.style.background = isPlaying ? 'linear-gradient(135deg, rgba(139, 92, 246, 0.3), rgba(59, 130, 246, 0.3))' : '';
             }
         }
