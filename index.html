@@ -303,6 +303,19 @@
             transform: translateY(0) scale(0.95);
         }
 
+        .header-btn svg {
+            width: 22px;
+            height: 22px;
+        }
+
+        .header-btn svg path {
+            fill: url(#iconGradient);
+        }
+
+        .header-btn:hover svg path {
+            fill: url(#iconGradientHover);
+        }
+
         .header-btn.danger:hover {
             background: rgba(239, 68, 68, 0.1);
             border-color: #ef4444;
@@ -1373,6 +1386,20 @@
 <body>
     <div class="bg-gradient"></div>
 
+    <!-- SVG Gradients for Icons -->
+    <svg width="0" height="0" style="position:absolute">
+        <defs>
+            <linearGradient id="iconGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+                <stop offset="0%" style="stop-color:#8b5cf6"/>
+                <stop offset="100%" style="stop-color:#3b82f6"/>
+            </linearGradient>
+            <linearGradient id="iconGradientHover" x1="0%" y1="0%" x2="100%" y2="100%">
+                <stop offset="0%" style="stop-color:#a78bfa"/>
+                <stop offset="100%" style="stop-color:#60a5fa"/>
+            </linearGradient>
+        </defs>
+    </svg>
+
     <!-- Login Screen -->
     <div class="login-screen" id="loginScreen">
         <div class="login-box">
@@ -1400,8 +1427,16 @@
         <!-- Header -->
         <div class="header">
             <div class="header-content">
-                <button class="header-btn" onclick="showDeleteDialog()" title="Удалить столбец">➖</button>
-                <button class="header-btn" onclick="showAddDialog()" title="Добавить столбец">➕</button>
+                <button class="header-btn" onclick="showDeleteDialog()" title="Удалить столбец">
+                    <svg viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
+                        <path fill-rule="evenodd" clip-rule="evenodd" d="M15 1H1V15H15V1ZM4 7V9L12 9V7L4 7Z"/>
+                    </svg>
+                </button>
+                <button class="header-btn" onclick="showAddDialog()" title="Добавить столбец">
+                    <svg viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
+                        <path fill-rule="evenodd" clip-rule="evenodd" d="M15 1H1V15H15V1ZM7 4H9V7H12V9H9V12H7V9H4V7H7V4Z"/>
+                    </svg>
+                </button>
                 <button class="header-btn" id="musicBtn" onclick="toggleMusic()" title="Музыка">🎵</button>
                 <span class="time-display-inner" id="timeDisplay">00:00</span>
                 <button class="escort-btn" onclick="window.location.href='https://eurogirlsshanghai.com'">escort</button>
