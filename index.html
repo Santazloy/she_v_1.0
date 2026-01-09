@@ -277,6 +277,34 @@
             font-variant-numeric: tabular-nums;
         }
 
+        .weather-display {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            padding: 8px 14px;
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid var(--border-color);
+            border-radius: 12px;
+        }
+
+        .weather-temp {
+            font-size: 18px;
+            font-weight: 600;
+            color: var(--text-primary);
+        }
+
+        .weather-icon {
+            font-size: 20px;
+        }
+
+        .weather-precip {
+            font-size: 12px;
+            color: var(--accent-cyan);
+            display: flex;
+            align-items: center;
+            gap: 4px;
+        }
+
         .header-btn {
             width: 46px;
             height: 46px;
@@ -1443,6 +1471,11 @@
                     </svg>
                 </button>
                 <span class="time-display-inner" id="timeDisplay">00:00</span>
+                <div class="weather-display" id="weatherDisplay" title="Shanghai Weather">
+                    <span class="weather-icon" id="weatherIcon">--</span>
+                    <span class="weather-temp" id="weatherTemp">--°</span>
+                    <span class="weather-precip" id="weatherPrecip"></span>
+                </div>
                 <button class="header-btn" onclick="window.location.href='https://eurogirlsshanghai.com'" title="Escort">
                     <svg viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
                         <path fill-rule="evenodd" clip-rule="evenodd" d="M13 7C13 9.41896 11.2822 11.4367 9 11.9V14H12V16H4V14H7V11.9C4.71776 11.4367 3 9.41896 3 7V6.89072C3 6.63062 3.01986 6.3709 3.05941 6.11382L4 0H12L12.9406 6.11382C12.9801 6.3709 13 6.63062 13 6.89072V7ZM5.2543 5H10.7457L10.2842 2H5.71584L5.2543 5Z"/>
@@ -2237,6 +2270,63 @@
         function updateMusicButton() { updateMusicUI(); }
 
         loadYouTubeAPI();
+
+        // Weather for Shanghai
+        const SHANGHAI_LAT = 31.2304;
+        const SHANGHAI_LON = 121.4737;
+
+        function getWeatherIcon(code, isDay) {
+            // WMO Weather codes mapping
+            const icons = {
+                0: isDay ? '☀️' : '🌙',   // Clear sky
+                1: isDay ? '🌤️' : '🌙',   // Mainly clear
+                2: '⛅',                   // Partly cloudy
+                3: '☁️',                   // Overcast
+                45: '🌫️', 48: '🌫️',       // Fog
+                51: '🌧️', 53: '🌧️', 55: '🌧️', // Drizzle
+                56: '🌧️', 57: '🌧️',       // Freezing drizzle
+                61: '🌧️', 63: '🌧️', 65: '🌧️', // Rain
+                66: '🌧️', 67: '🌧️',       // Freezing rain
+                71: '🌨️', 73: '🌨️', 75: '🌨️', // Snow
+                77: '🌨️',                 // Snow grains
+                80: '🌧️', 81: '🌧️', 82: '🌧️', // Rain showers
+                85: '🌨️', 86: '🌨️',       // Snow showers
+                95: '⛈️',                 // Thunderstorm
+                96: '⛈️', 99: '⛈️'        // Thunderstorm with hail
+            };
+            return icons[code] || '🌡️';
+        }
+
+        async function fetchWeather() {
+            try {
+                const url = `https://api.open-meteo.com/v1/forecast?latitude=${SHANGHAI_LAT}&longitude=${SHANGHAI_LON}&current=temperature_2m,weather_code,precipitation,is_day&timezone=Asia/Shanghai`;
+                const response = await fetch(url);
+                const data = await response.json();
+
+                if (data.current) {
+                    const temp = Math.round(data.current.temperature_2m);
+                    const weatherCode = data.current.weather_code;
+                    const precipitation = data.current.precipitation;
+                    const isDay = data.current.is_day === 1;
+
+                    document.getElementById('weatherIcon').textContent = getWeatherIcon(weatherCode, isDay);
+                    document.getElementById('weatherTemp').textContent = `${temp}°`;
+
+                    const precipEl = document.getElementById('weatherPrecip');
+                    if (precipitation > 0) {
+                        precipEl.innerHTML = `💧${precipitation}mm`;
+                    } else {
+                        precipEl.textContent = '';
+                    }
+                }
+            } catch (error) {
+                console.error('Weather fetch failed:', error);
+            }
+        }
+
+        // Fetch weather on load and every 10 minutes
+        fetchWeather();
+        setInterval(fetchWeather, 600000);
     </script>
 </body>
 </html>
